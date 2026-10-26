@@ -150,7 +150,7 @@ export const PcFinalApprovalPage: React.FC = () => {
             onClick={() => switchRoleUser('USR-PC-01')}
             className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
           >
-            Switch to Markus Klein (PC Admin)
+            Switch to PC Admin
           </button>
         </div>
       )}
@@ -270,7 +270,7 @@ export const PcFinalApprovalPage: React.FC = () => {
                 <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
                   <div className="font-bold">
-                    Awaiting Professor Approval ({request.assignedProfessorName || 'Prof. Dr. Weber'})
+                    Awaiting Professor Approval ({request.assignedProfessorName || 'Ajinkya Keskar'})
                   </div>
                   <p className="text-amber-800 mt-0.5">
                     PC Final Approval is locked until the assigned Professor approves the academic scope of this request.

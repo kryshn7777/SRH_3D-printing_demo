@@ -147,9 +147,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
       : 'PC Administrator';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-slate-900">
-      {/* Top Header Bar matching reference image */}
-      <header className="h-15 bg-white border-b border-slate-200/90 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
+    <div className="min-h-screen flex flex-col bg-[#F5F4F3] text-[#171717]">
+      {/* Official SRH University Top Brand Accent Strip (#D54407) */}
+      <div className="h-1 w-full bg-gradient-to-r from-[#D54407] via-[#D54407] to-[#37484E] shrink-0" />
+
+      {/* Top Header Bar in SRH University Website Format */}
+      <header className="h-16 bg-white border-b border-[#DDDAD8] px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -179,17 +182,17 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         {/* Center Demo Role Switcher Bar for effortless evaluation */}
-        <div className="hidden md:flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/90 rounded-lg p-1 text-xs">
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="hidden md:flex items-center gap-1.5 bg-[#F5F4F3] border border-[#DDDAD8] rounded-lg p-1 text-xs">
+          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#575756]">
             Demo Role:
           </span>
           <button
             type="button"
             onClick={() => handleRoleSwitch('USR-STU-01')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
               currentUser.role === 'STUDENT'
-                ? 'bg-[#1662F3] text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                ? 'bg-[#D54407] text-white shadow-2xs'
+                : 'text-[#575756] hover:text-[#171717] hover:bg-white/80'
             }`}
           >
             Student (Anna)
@@ -197,31 +200,31 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
           <button
             type="button"
             onClick={() => handleRoleSwitch('USR-PROF-01')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
               currentUser.role === 'PROFESSOR'
-                ? 'bg-[#1662F3] text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                ? 'bg-[#D54407] text-white shadow-2xs'
+                : 'text-[#575756] hover:text-[#171717] hover:bg-white/80'
             }`}
           >
-            Professor (Dr. Weber)
+            Professor (Ajinkya Keskar)
           </button>
           <button
             type="button"
             onClick={() => handleRoleSwitch('USR-PC-01')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
               currentUser.role === 'PC_ADMIN'
-                ? 'bg-[#1662F3] text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                ? 'bg-[#D54407] text-white shadow-2xs'
+                : 'text-[#575756] hover:text-[#171717] hover:bg-white/80'
             }`}
           >
-            PC Admin (Markus)
+            PC Admin
           </button>
-          <div className="h-3.5 w-[1px] bg-slate-300 mx-0.5" />
+          <div className="h-3.5 w-[1px] bg-[#DDDAD8] mx-0.5" />
           <button
             type="button"
             onClick={resetDemoData}
             title="Reset demo state to initial seed data"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white/70 font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[#575756] hover:text-[#171717] hover:bg-white/80 font-medium cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             Reset
@@ -393,8 +396,21 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-7 max-w-[1440px]">
-          {children}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-7 max-w-[1440px] flex flex-col justify-between">
+          <div>{children}</div>
+
+          <footer className="mt-12 pt-5 border-t border-[#DDDAD8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-[#575756]">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-[#D54407]" />
+              <span className="font-semibold text-[#171717]">
+                SRH University | Design your Future
+              </span>
+              <span>— Campus Berlin MakerLab &amp; FDM Print Center</span>
+            </div>
+            <div className="text-[11px] text-[#575756]">
+              Ernst-Reuter-Platz 10, 10587 Berlin • Official SRH Study Programmes Integrated
+            </div>
+          </footer>
         </main>
       </div>
 

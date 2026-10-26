@@ -157,7 +157,7 @@ export const NewRequestPage: React.FC = () => {
 
   const fillSampleProject = () => {
     setProjectTitle('Autonomous Rover Gripper Bracket');
-    setCourseOrDepartment('Mechatronics Engineering');
+    setCourseOrDepartment('B.Eng. Applied Mechatronic Systems');
     setDescription(
       'Reinforced servo actuator mounting bracket for a 2-finger parallel gripper used in the Mechatronics Lab.'
     );

@@ -111,7 +111,7 @@ export const ProfessorReviewPage: React.FC = () => {
             onClick={() => switchRoleUser('USR-PROF-01')}
             className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
           >
-            Switch to Prof. Dr. Weber
+            Switch to Ajinkya Keskar
           </button>
         </div>
       )}

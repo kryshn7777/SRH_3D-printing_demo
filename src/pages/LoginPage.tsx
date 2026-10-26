@@ -173,57 +173,63 @@ export const LoginPage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#070E1B]/95 via-[#070E1B]/65 to-[#070E1B]/85" />
       </div>
 
-      {/* Top Navigation Header on Login Screen */}
-      <header className="relative z-10 max-w-7xl w-full mx-auto px-6 lg:px-12 pt-7 pb-4 flex items-center justify-between">
-        <SrhLogo variant="light-text" subtitle="university" />
+      {/* Official SRH University Website White Header Bar (matching srh-university.de) */}
+      <div className="relative z-10 bg-white text-[#171717] border-b border-[#DDDAD8] shadow-xs">
+        <div className="h-1 w-full bg-gradient-to-r from-[#D54407] via-[#D54407] to-[#37484E]" />
+        <header className="max-w-7xl w-full mx-auto px-6 lg:px-12 h-20 flex items-center justify-between">
+          <SrhLogo variant="dark-text" subtitle="university" />
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-200">
-          <button
-            type="button"
-            onClick={() => setInfoModal(null)}
-            className="hover:text-white transition-colors cursor-pointer"
-          >
-            Home
-          </button>
-          <button
-            type="button"
-            onClick={() => setInfoModal('printers')}
-            className="hover:text-white transition-colors cursor-pointer"
-          >
-            Printers
-          </button>
-          <button
-            type="button"
-            onClick={() => setInfoModal('how-it-works')}
-            className="hover:text-white transition-colors cursor-pointer"
-          >
-            How it works
-          </button>
-          <button
-            type="button"
-            onClick={() => setInfoModal('contact')}
-            className="hover:text-white transition-colors cursor-pointer"
-          >
-            Contact
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const el = document.getElementById('srh-email-input');
-              el?.focus();
-            }}
-            className="px-5 py-2 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] text-white font-semibold shadow-sm transition-colors cursor-pointer"
-          >
-            Login
-          </button>
-        </nav>
-      </header>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#171717]">
+            <button
+              type="button"
+              onClick={() => setInfoModal(null)}
+              className="hover:text-[#D54407] transition-colors cursor-pointer"
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => setInfoModal('printers')}
+              className="hover:text-[#D54407] transition-colors cursor-pointer"
+            >
+              Printers
+            </button>
+            <button
+              type="button"
+              onClick={() => setInfoModal('how-it-works')}
+              className="hover:text-[#D54407] transition-colors cursor-pointer"
+            >
+              How it works
+            </button>
+            <button
+              type="button"
+              onClick={() => setInfoModal('contact')}
+              className="hover:text-[#D54407] transition-colors cursor-pointer"
+            >
+              Contact
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('srh-email-input');
+                el?.focus();
+              }}
+              className="px-6 py-2.5 rounded-[20px_20px_20px_2px] bg-[#D54407] hover:bg-[#C12D00] text-white font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              Login
+            </button>
+          </nav>
+        </header>
+      </div>
 
       {/* Main Split Content */}
       <main className="relative z-10 max-w-7xl w-full mx-auto px-6 lg:px-12 py-8 flex-1 flex flex-col lg:flex-row items-center justify-between gap-12">
         {/* Left Hero Column */}
         <div className="flex-1 max-w-xl space-y-8">
           <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D54407]/20 border border-[#D54407]/40 text-[#FF7A45] text-xs font-bold uppercase tracking-wider">
+              SRH University Berlin • Design Your Future
+            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-extrabold tracking-tight leading-[1.12] text-white">
               3D Printing for
               <br />
@@ -426,7 +432,7 @@ export const LoginPage: React.FC = () => {
               >
                 <div className="text-xs font-bold text-slate-900">Professor</div>
                 <div className="text-[10px] text-slate-500 truncate">
-                  Prof. Dr. Weber
+                  Ajinkya Keskar
                 </div>
               </button>
               <button
@@ -436,7 +442,7 @@ export const LoginPage: React.FC = () => {
               >
                 <div className="text-xs font-bold text-slate-900">PC Admin</div>
                 <div className="text-[10px] text-slate-500 truncate">
-                  Markus Klein
+                  PC Admin
                 </div>
               </button>
             </div>
@@ -541,10 +547,10 @@ export const LoginPage: React.FC = () => {
                 <strong>Student:</strong> anna.mueller@srh-berlin.de
               </li>
               <li>
-                <strong>Professor:</strong> weber@srh-berlin.de
+                <strong>Professor (Ajinkya Keskar):</strong> ajinkya.keskar@srh-berlin.de
               </li>
               <li>
-                <strong>PC Admin:</strong> markus.klein@srh-berlin.de
+                <strong>PC Admin:</strong> pc.admin@srh-berlin.de
               </li>
             </ul>
             <div className="mt-4 flex justify-end">
@@ -620,10 +626,11 @@ export const LoginPage: React.FC = () => {
             {infoModal === 'contact' && (
               <div className="mt-3 space-y-2 text-xs text-slate-700">
                 <p>
-                  <strong>SRH Berlin MakerLab & Print Center</strong>
+                  <strong>SRH Berlin MakerLab &amp; Print Center</strong>
                 </p>
                 <p>Ernst-Reuter-Platz 10, 10587 Berlin — Building B, Room 104</p>
-                <p>Lead PC Administrator: Markus Klein (markus.klein@srh-berlin.de)</p>
+                <p>Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)</p>
+                <p>Print Center Administration: PC Admin (pc.admin@srh-berlin.de)</p>
                 <p>Lab Hours: Mon–Fri, 08:30 – 19:00 CET</p>
               </div>
             )}

@@ -21,13 +21,13 @@ import {
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
-  CURRENT_USER_ID: 'srh_3dp_current_user_id_v1',
-  USERS: 'srh_3dp_users_v1',
-  PRINTERS: 'srh_3dp_printers_v1',
-  REQUESTS: 'srh_3dp_requests_v1',
-  APPROVALS: 'srh_3dp_approvals_v1',
-  PC_LOGS: 'srh_3dp_pc_logs_v1',
-  ACCESS_GRANTS: 'srh_3dp_access_grants_v1',
+  CURRENT_USER_ID: 'srh_3dp_current_user_id_v3',
+  USERS: 'srh_3dp_users_v3',
+  PRINTERS: 'srh_3dp_printers_v3',
+  REQUESTS: 'srh_3dp_requests_v3',
+  APPROVALS: 'srh_3dp_approvals_v3',
+  PC_LOGS: 'srh_3dp_pc_logs_v3',
+  ACCESS_GRANTS: 'srh_3dp_access_grants_v3',
 };
 
 export interface ToastNotification {
@@ -270,7 +270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ok: false,
         error:
-          'No SRH account found for that email. Try anna.mueller@srh-berlin.de, weber@srh-berlin.de, or markus.klein@srh-berlin.de.',
+          'No SRH account found for that email. Try anna.mueller@srh-berlin.de, ajinkya.keskar@srh-berlin.de, or pc.admin@srh-berlin.de.',
       };
     }
     if (!matched.active) {
@@ -371,7 +371,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       submissionDateFormatted: dateShort,
       submissionDateTimeFormatted: dateTime,
       currentStatus: targetStatus,
-      assignedProfessorName: 'Prof. Dr. Weber',
+      assignedProfessorName: 'Ajinkya Keskar',
       assignedProfessorId: 'USR-PROF-01',
     };
 
@@ -392,7 +392,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         printerName: newRequest.printerName,
         printerId: newRequest.printerId,
         material: newRequest.material,
-        professorApprovalSummary: 'Pending Prof. Weber',
+        professorApprovalSummary: 'Pending Ajinkya Keskar',
         pcAdminDecisionSummary: 'Awaiting Professor Stage',
         action: 'REQUEST_SUBMITTED',
         actorId: currentUser.id,
@@ -407,7 +407,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addToast(
         'success',
         `Request #${newRequest.id} Submitted`,
-        'Your request has been routed to Prof. Dr. Weber for academic approval.'
+        'Your request has been routed to Ajinkya Keskar for academic approval.'
       );
     } else {
       addToast(
@@ -457,7 +457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       printerName: updated.printerName,
       printerId: updated.printerId,
       material: updated.material,
-      professorApprovalSummary: 'Pending Prof. Weber',
+      professorApprovalSummary: 'Pending Ajinkya Keskar',
       pcAdminDecisionSummary: 'Awaiting Professor Stage',
       action: 'REQUEST_SUBMITTED',
       actorId: currentUser.id,
@@ -714,7 +714,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       material: req.material,
       professorApprovalSummary: profApproval
         ? `Approved by ${profApproval.reviewerName}`
-        : `Approved by ${req.assignedProfessorName || 'Prof. Weber'}`,
+        : `Approved by ${req.assignedProfessorName || 'Ajinkya Keskar'}`,
       pcAdminDecisionSummary:
         decision === 'APPROVED'
           ? `Authorized by ${currentUser.name} (${dateShort})`
@@ -808,7 +808,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       printerName: req.printerName,
       printerId: req.printerId,
       material: req.material,
-      professorApprovalSummary: `Approved by ${req.assignedProfessorName || 'Prof. Weber'}`,
+      professorApprovalSummary: `Approved by ${req.assignedProfessorName || 'Ajinkya Keskar'}`,
       pcAdminDecisionSummary: `Revoked by ${currentUser.name} (${dateShort})`,
       action: 'ACCESS_REVOKED',
       actorId: currentUser.id,

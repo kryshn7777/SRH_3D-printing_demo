@@ -2,16 +2,21 @@
 
 @layer base {
   :root {
+    --srh-primary: #D54407;
+    --srh-primary-dark: #C12D00;
+    --srh-anthracite: #37484E;
+    --srh-black-blue: #001725;
+    --srh-blue-400: #00699A;
     --srh-navy: #0B1528;
     --srh-navy-mid: #13223E;
     --srh-blue: #1662F3;
     --srh-blue-hover: #1251D1;
     --srh-blue-soft: #EBF2FF;
-    --srh-canvas: #F4F6F9;
+    --srh-canvas: #F5F4F3;
     --srh-surface: #FFFFFF;
-    --srh-border: #E2E8F0;
-    --srh-text: #0F172A;
-    --srh-muted: #64748B;
+    --srh-border: #DDDAD8;
+    --srh-text: #171717;
+    --srh-muted: #575756;
   }
 
   body {

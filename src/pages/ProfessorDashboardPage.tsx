@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { DEPARTMENTS } from '../data/seedData';
 import { StatusBadge } from '../components/StatusBadge';
 
 type ProfTab = 'pending' | 'approved' | 'rejected';
@@ -36,14 +37,7 @@ export const ProfessorDashboardPage: React.FC = () => {
   };
 
   // Scope requests to Professor's assigned departments
-  const allowedDepts = currentUser?.assignedDepartments || [
-    'Mechatronics Engineering',
-    'Industrial Design',
-    'Robotics & AI',
-    'Mechanical Engineering',
-    'Computer Science',
-    'Renewable Energy & Electrical Engineering',
-  ];
+  const allowedDepts = currentUser?.assignedDepartments || DEPARTMENTS;
 
   const scopedRequests = requests.filter(
     (r) =>
@@ -117,7 +111,7 @@ export const ProfessorDashboardPage: React.FC = () => {
             onClick={() => switchRoleUser('USR-PROF-01')}
             className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
           >
-            Switch to Prof. Dr. Weber
+            Switch to Ajinkya Keskar
           </button>
         </div>
       )}

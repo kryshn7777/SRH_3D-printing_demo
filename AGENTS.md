@@ -13,7 +13,12 @@
 
 ## Architecture Summary
 - **Stack**: React 19, TypeScript, Vite 6, Tailwind CSS v4, React Router v7, Lucide Icons.
-- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v1` in `src/context/AppContext.tsx`.
+- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v3` in `src/context/AppContext.tsx`.
+- **Seeded Demo Identities**:
+  - **Student**: `Anna Müller` (`anna.mueller@srh-berlin.de`)
+  - **Professor**: `Ajinkya Keskar` (`ajinkya.keskar@srh-berlin.de`)
+  - **PC Administrator**: `PC Admin` (`pc.admin@srh-berlin.de`)
+- **Branding**: Official SRH University vector SVG logo (`#D54407` `.logoMain` + `#575756` `.logoMeta` scraped from `https://www.srh-university.de/en/`) and official SRH Berlin study programmes.
 - **12 Implemented Routes**:
   1. `/login` — Split-screen SRH Berlin login with demo role quick-select.
   2. `/student/dashboard` — Student KPI summary, recent requests, and available printers.

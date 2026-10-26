@@ -122,7 +122,7 @@ export const PcAdminDashboardPage: React.FC = () => {
             onClick={() => switchRoleUser('USR-PC-01')}
             className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
           >
-            Switch to Markus Klein (PC Admin)
+            Switch to PC Admin
           </button>
         </div>
       )}
@@ -334,7 +334,7 @@ export const PcAdminDashboardPage: React.FC = () => {
                       <td className="py-3.5 px-3 text-slate-700 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          {req.assignedProfessorName || 'Prof. Weber'}
+                          {req.assignedProfessorName || 'Ajinkya Keskar'}
                         </span>
                       </td>
                       <td className="py-3.5 px-3 text-slate-600 whitespace-nowrap">

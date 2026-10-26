@@ -175,7 +175,9 @@ export const HelpPage: React.FC = () => {
           <p className="text-slate-600 leading-relaxed">
             Location: Building B, Room 104 (Ernst-Reuter-Platz 10, Berlin)
             <br />
-            PC Administrator: Markus Klein (markus.klein@srh-berlin.de)
+            Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)
+            <br />
+            Print Center Administration: PC Admin (pc.admin@srh-berlin.de)
           </p>
         </div>
       </div>
