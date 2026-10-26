@@ -130,84 +130,86 @@ export const AvailablePrintersPage: React.FC = () => {
       </div>
 
       {/* Printer Catalogue Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
         {filteredPrinters.map((printer) => (
           <div
             key={printer.id}
             className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between overflow-hidden"
           >
-            <div className="p-5">
-              {/* Top Row: ID & Availability */}
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
-                  {printer.id}
-                </span>
-                <PrinterAvailabilityBadge status={printer.availabilityStatus} />
-              </div>
-
-              {/* Illustration & Title */}
-              <div className="flex items-center gap-4 mb-4">
-                <PrinterIllustration
-                  printerKey={printer.illustrationKey}
-                  className="w-20 h-20"
-                />
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {printer.name}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">{printer.model}</p>
-                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded bg-blue-50 text-[#1662F3] text-[11px] font-semibold">
-                    Technology: {printer.technology}
+            <div className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                {/* Top Row: ID & Availability */}
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
+                    {printer.id}
                   </span>
-                </div>
-              </div>
-
-              {/* Specifications List */}
-              <div className="space-y-2.5 pt-3 border-t border-slate-100 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Box className="w-3.5 h-3.5 text-slate-400" />
-                    Build Volume
-                  </span>
-                  <span className="font-semibold text-slate-800 font-mono">
-                    {printer.buildVolume}
-                  </span>
+                  <PrinterAvailabilityBadge status={printer.availabilityStatus} />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-slate-400" />
-                    Nozzle / Layer
-                  </span>
-                  <span className="font-medium text-slate-700">
-                    {printer.layerResolution}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    Lab Location
-                  </span>
-                  <span className="font-medium text-slate-700">
-                    {printer.location}
-                  </span>
-                </div>
-
-                <div className="pt-1">
-                  <span className="text-slate-500 block mb-1.5">
-                    Supported Materials
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {printer.supportedMaterials.map((mat) => (
-                      <span
-                        key={mat}
-                        className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-200/80"
-                      >
-                        {mat}
-                      </span>
-                    ))}
+                {/* Illustration & Title */}
+                <div className="flex items-center gap-3.5 mb-4">
+                  <PrinterIllustration
+                    printerKey={printer.illustrationKey}
+                    className="w-16 h-16 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <h2 className="text-base font-bold text-slate-900 leading-snug">
+                      {printer.name}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">{printer.model}</p>
+                    <span className="inline-block mt-1.5 px-2 py-0.5 rounded bg-blue-50 text-[#1662F3] text-[11px] font-semibold">
+                      {printer.technology}
+                    </span>
                   </div>
+                </div>
+
+                {/* Specifications List */}
+                <div className="space-y-2.5 pt-3 border-t border-slate-100 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Box className="w-3.5 h-3.5 text-slate-400" />
+                      Build Volume
+                    </span>
+                    <span className="font-semibold text-slate-800 font-mono">
+                      {printer.buildVolume}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-slate-400" />
+                      Nozzle / Layer
+                    </span>
+                    <span className="font-medium text-slate-700">
+                      {printer.layerResolution}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      Location
+                    </span>
+                    <span className="font-medium text-slate-700">
+                      {printer.location}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 mt-3">
+                <span className="text-slate-500 block mb-1.5 text-xs">
+                  Supported Materials
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {printer.supportedMaterials.map((mat) => (
+                    <span
+                      key={mat}
+                      className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-semibold text-[11px] border border-slate-200/80"
+                    >
+                      {mat}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>

@@ -231,7 +231,7 @@ export const StudentDashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {printers.slice(0, 3).map((printer) => (
+            {printers.slice(0, 4).map((printer) => (
               <div
                 key={printer.id}
                 onClick={() => navigate(`/student/printers?highlight=${printer.id}`)}

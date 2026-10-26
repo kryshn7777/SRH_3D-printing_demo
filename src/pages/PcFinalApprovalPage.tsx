@@ -396,7 +396,7 @@ export const PcFinalApprovalPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setConfirmRevokeOpen(true)}
-              className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Ban className="w-3.5 h-3.5" />
               Revoke Printer Access
@@ -407,7 +407,7 @@ export const PcFinalApprovalPage: React.FC = () => {
             type="button"
             disabled={!canAuthorize}
             onClick={handleReject}
-            className="px-6 py-2.5 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-45 disabled:pointer-events-none text-red-700 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+            className="px-6 py-2.5 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-45 disabled:pointer-events-none text-red-700 text-sm font-semibold transition-colors cursor-pointer"
           >
             Reject
           </button>
@@ -416,7 +416,7 @@ export const PcFinalApprovalPage: React.FC = () => {
             type="button"
             disabled={!canAuthorize}
             onClick={() => setConfirmApproveOpen(true)}
-            className="px-6 py-2.5 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] disabled:opacity-45 disabled:pointer-events-none text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+            className="px-6 py-2.5 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] disabled:opacity-45 disabled:pointer-events-none text-white text-sm font-semibold shadow-xs transition-colors cursor-pointer"
           >
             Approve &amp; Grant Access
           </button>

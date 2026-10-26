@@ -73,14 +73,30 @@
   }
 
   body {
-    font-family: 'SRHText', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    letter-spacing: 0.3px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
     background-color: var(--srh-canvas);
-    color: var(--srh-text);
+    color: #1E293B;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4, .font-srh-headline {
-    font-family: 'SRHHeadline', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+  }
+
+  .font-srh-headline {
+    font-family: 'SRHHeadline', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.3px;
+  }
+
+  .font-srh-text {
+    font-family: 'SRHText', 'Plus Jakarta Sans', sans-serif;
     letter-spacing: 0.3px;
   }
 

@@ -237,8 +237,17 @@ export const ProfessorReviewPage: React.FC = () => {
         <section className="md:col-span-6 bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <h2 className="text-sm font-bold text-slate-900 mb-3">
-              Student File
+              Student File &amp; 3D Preview
             </h2>
+
+            <div className="mb-3">
+              <CadModelPreview
+                previewKey={request.attachment.previewKey}
+                storageKey={request.attachment.storageKey}
+                fileName={request.attachment.fileName}
+                className="w-full h-44 rounded-lg border border-slate-200"
+              />
+            </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -267,7 +276,7 @@ export const ProfessorReviewPage: React.FC = () => {
             </div>
           </div>
 
-          <p className="text-[11px] text-slate-400 mt-3">
+          <p className="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100">
             Note: Approving this request forwards it to the PC Administrator queue. It does not directly grant printer access.
           </p>
         </section>
@@ -279,7 +288,7 @@ export const ProfessorReviewPage: React.FC = () => {
               htmlFor="prof-review-comments"
               className="block text-sm font-bold text-slate-900 mb-2"
             >
-              Comments{' '}
+              Academic Review Comments{' '}
               <span className="text-xs font-normal text-slate-500">
                 (optional for approval, required for rejection or changes)
               </span>
@@ -288,10 +297,10 @@ export const ProfessorReviewPage: React.FC = () => {
             {canReview ? (
               <textarea
                 id="prof-review-comments"
-                rows={3}
+                rows={7}
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder="Add your comments..."
+                placeholder="Add your feedback or required changes..."
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
               />
             ) : (
@@ -313,6 +322,11 @@ export const ProfessorReviewPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          <div className="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span>Course Department: {request.courseOrDepartment}</span>
+            <span>Applicant: {request.studentName}</span>
+          </div>
         </section>
       </div>
 
@@ -322,7 +336,7 @@ export const ProfessorReviewPage: React.FC = () => {
           type="button"
           disabled={!canReview}
           onClick={() => handleDecision('CHANGES_REQUESTED')}
-          className="px-4 py-2.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:opacity-45 disabled:pointer-events-none text-amber-800 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-4 py-2.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:opacity-45 disabled:pointer-events-none text-amber-800 text-sm font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Request Changes
@@ -332,7 +346,7 @@ export const ProfessorReviewPage: React.FC = () => {
           type="button"
           disabled={!canReview}
           onClick={() => handleDecision('REJECTED')}
-          className="px-6 py-2.5 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-45 disabled:pointer-events-none text-red-700 text-sm font-bold transition-colors cursor-pointer"
+          className="px-6 py-2.5 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-45 disabled:pointer-events-none text-red-700 text-sm font-semibold transition-colors cursor-pointer"
         >
           Reject
         </button>
@@ -341,7 +355,7 @@ export const ProfessorReviewPage: React.FC = () => {
           type="button"
           disabled={!canReview}
           onClick={() => handleDecision('APPROVED')}
-          className="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-45 disabled:pointer-events-none text-white text-sm font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+          className="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-45 disabled:pointer-events-none text-white text-sm font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
         >
           <Check className="w-4 h-4 stroke-[2.5]" />
           Approve
