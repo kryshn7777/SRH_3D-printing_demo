@@ -12,6 +12,12 @@ import {
 import { useApp } from '../context/AppContext';
 import { DEPARTMENTS } from '../data/seedData';
 import { SupportedMaterial, AttachmentMetadata } from '../types/models';
+import { CadModelPreview } from '../components/PrinterIllustration';
+import {
+  saveModelBlob,
+  parseStlOrObjGeometry,
+  generateSeedStlArrayBuffer,
+} from '../utils/stlStorageAndParser';
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 const ALLOWED_EXTENSIONS = ['stl', '3mf', 'obj'];
@@ -86,7 +92,7 @@ export const NewRequestPage: React.FC = () => {
     }
   };
 
-  const validateAndSetFile = (file: File) => {
+  const validateAndSetFile = async (file: File) => {
     setFileError(null);
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
@@ -115,21 +121,41 @@ export const NewRequestPage: React.FC = () => {
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
 
-    setAttachment({
-      fileName: file.name,
-      fileSizeBytes: file.size,
-      fileSizeFormatted: sizeMb,
-      fileType: ext.toUpperCase() as 'STL' | '3MF' | 'OBJ',
-      uploadedAt: 'Just now',
-      dimensionsMm: '124 × 76 × 42 mm',
-      previewKey: 'bracket-joint',
-    });
+    try {
+      const buffer = await file.arrayBuffer();
+      const storageKey = `stl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await saveModelBlob(storageKey, buffer, file.name, ext.toUpperCase());
+
+      const parsed = parseStlOrObjGeometry(buffer, file.name);
+      if (ext === 'stl' && (!parsed || parsed.triangleCount === 0)) {
+        setAttachment(null);
+        setFileError(
+          'Could not parse any valid 3D triangles from this .STL file. Please verify the file is a valid binary or ASCII STL.'
+        );
+        return;
+      }
+
+      setAttachment({
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        fileSizeFormatted: sizeMb,
+        fileType: ext.toUpperCase() as 'STL' | '3MF' | 'OBJ',
+        uploadedAt: 'Just now',
+        dimensionsMm: parsed?.dimensionsMm || '124 × 76 × 42 mm',
+        previewKey: 'generic-stl',
+        storageKey,
+        triangleCount: parsed?.triangleCount,
+        volumeCm3: parsed?.volumeCm3,
+      });
+    } catch {
+      setFileError('Failed to read the selected 3D model file.');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      validateAndSetFile(file);
+      void validateAndSetFile(file);
     }
   };
 
@@ -138,20 +164,28 @@ export const NewRequestPage: React.FC = () => {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      validateAndSetFile(file);
+      void validateAndSetFile(file);
     }
   };
 
-  const attachSampleStl = () => {
+  const attachSampleStl = async () => {
     setFileError(null);
+    const sampleBuffer = generateSeedStlArrayBuffer('bracket-joint');
+    const storageKey = `stl_sample_${Date.now()}`;
+    await saveModelBlob(storageKey, sampleBuffer, 'robot_arm_joint.stl', 'STL');
+    const parsed = parseStlOrObjGeometry(sampleBuffer, 'robot_arm_joint.stl');
+    const kb = Math.max(1, Math.round(sampleBuffer.byteLength / 1024));
     setAttachment({
       fileName: 'robot_arm_joint.stl',
-      fileSizeBytes: 2516582,
-      fileSizeFormatted: '2.4 MB',
+      fileSizeBytes: sampleBuffer.byteLength,
+      fileSizeFormatted: `${kb} KB`,
       fileType: 'STL',
       uploadedAt: 'Just now',
-      dimensionsMm: '142 × 68 × 54 mm',
+      dimensionsMm: parsed?.dimensionsMm || '104 × 64 × 54 mm',
       previewKey: 'bracket-joint',
+      storageKey,
+      triangleCount: parsed?.triangleCount,
+      volumeCm3: parsed?.volumeCm3,
     });
   };
 
@@ -599,29 +633,45 @@ export const NewRequestPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Attached File Metadata Box */}
+                {/* Attached File Metadata Box + Live Interactive 3D STL Preview */}
                 {attachment && (
-                  <div className="mt-4 w-full p-2.5 rounded-lg bg-white border border-emerald-200 flex items-center justify-between gap-2 text-left">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileBox className="w-4 h-4 text-[#1662F3] shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-900 truncate">
-                          {attachment.fileName}
-                        </div>
-                        <div className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {attachment.fileSizeFormatted} • {attachment.fileType} Verified
+                  <div className="mt-4 w-full space-y-2.5 text-left">
+                    <CadModelPreview
+                      previewKey={attachment.previewKey}
+                      storageKey={attachment.storageKey}
+                      fileName={attachment.fileName}
+                      className="w-full h-40"
+                    />
+                    <div className="w-full p-2.5 rounded-lg bg-white border border-emerald-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileBox className="w-4 h-4 text-[#1662F3] shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-900 truncate">
+                            {attachment.fileName}
+                          </div>
+                          <div className="text-[10px] text-emerald-700 font-medium flex flex-wrap items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 shrink-0" />
+                            <span>
+                              {attachment.fileSizeFormatted} • {attachment.fileType}
+                              {attachment.triangleCount
+                                ? ` • ${attachment.triangleCount.toLocaleString()} tris`
+                                : ''}
+                              {attachment.volumeCm3
+                                ? ` • ${attachment.volumeCm3} cm³`
+                                : ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setAttachment(null)}
+                        className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                        aria-label="Remove attached file"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setAttachment(null)}
-                      className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
-                      aria-label="Remove attached file"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 )}
 

@@ -12,6 +12,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { CadModelPreview } from '../components/PrinterIllustration';
 import { StatusBadge } from '../components/StatusBadge';
+import { triggerModelDownload } from '../utils/stlStorageAndParser';
 
 export const ProfessorReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -70,19 +71,16 @@ export const ProfessorReviewPage: React.FC = () => {
     navigate('/professor/dashboard');
   };
 
-  const handleDownloadModel = () => {
-    const content = `solid ${request.projectTitle.replace(/\s+/g, '_')}\nendsolid\n`;
-    const blob = new Blob([content], { type: 'application/sla' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = request.attachment.fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadModel = async () => {
+    await triggerModelDownload(
+      request.attachment.fileName,
+      request.attachment.storageKey,
+      request.attachment.previewKey
+    );
     addToast(
       'info',
       'Model Downloaded',
-      `Downloaded ${request.attachment.fileName} for inspection.`
+      `Downloaded ${request.attachment.fileName} (${request.attachment.fileSizeFormatted}) for academic CAD inspection.`
     );
   };
 
@@ -148,11 +146,13 @@ export const ProfessorReviewPage: React.FC = () => {
       {/* Top Main Details Card matching Screen 8 */}
       <section className="bg-white rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          {/* Left: 3D Part Render (4 cols) */}
+          {/* Left: Interactive 3D STL Mesh Viewer (4 cols) */}
           <div className="md:col-span-4">
             <CadModelPreview
               previewKey={request.attachment.previewKey}
-              className="w-full h-44"
+              storageKey={request.attachment.storageKey}
+              fileName={request.attachment.fileName}
+              className="w-full h-48"
             />
           </div>
 

@@ -8,10 +8,13 @@ import {
   Clock,
   FileBox,
   Ban,
+  Download,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { CadModelPreview } from '../components/PrinterIllustration';
+import { triggerModelDownload } from '../utils/stlStorageAndParser';
 
 export const PcFinalApprovalPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -219,11 +222,34 @@ export const PcFinalApprovalPage: React.FC = () => {
             </span>
 
             <span className="text-slate-500 font-medium">3D Model File</span>
-            <span className="col-span-2 font-medium text-[#1662F3] flex items-center gap-1">
-              <FileBox className="w-3.5 h-3.5" />
-              {request.attachment.fileName} ({request.attachment.fileSizeFormatted})
+            <span className="col-span-2 font-medium text-[#1662F3] flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1">
+                <FileBox className="w-3.5 h-3.5" />
+                {request.attachment.fileName} ({request.attachment.fileSizeFormatted})
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  void triggerModelDownload(
+                    request.attachment.fileName,
+                    request.attachment.storageKey,
+                    request.attachment.previewKey
+                  )
+                }
+                className="px-2.5 py-1 rounded-md bg-[#EBF2FF] hover:bg-blue-100 text-[#1662F3] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Download className="w-3 h-3" />
+                Download STL
+              </button>
             </span>
           </div>
+
+          <CadModelPreview
+            previewKey={request.attachment.previewKey}
+            storageKey={request.attachment.storageKey}
+            fileName={request.attachment.fileName}
+            className="w-full h-40"
+          />
 
           <div className="pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-400 font-medium block">

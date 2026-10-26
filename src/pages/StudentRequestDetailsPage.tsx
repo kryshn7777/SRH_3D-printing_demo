@@ -12,6 +12,7 @@ import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { CadModelPreview } from '../components/PrinterIllustration';
 import { ApprovalTimeline } from '../components/ApprovalTimeline';
+import { triggerModelDownload } from '../utils/stlStorageAndParser';
 
 export const StudentRequestDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,19 +46,16 @@ export const StudentRequestDetailsPage: React.FC = () => {
 
   const requestApprovals = approvals.filter((a) => a.requestId === request.id);
 
-  const handleDownloadModel = () => {
-    const content = `solid ${request.projectTitle.replace(/\s+/g, '_')}\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 10 0 0\n      vertex 0 10 0\n    endloop\n  endfacet\nendsolid\n`;
-    const blob = new Blob([content], { type: 'application/sla' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = request.attachment.fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadModel = async () => {
+    await triggerModelDownload(
+      request.attachment.fileName,
+      request.attachment.storageKey,
+      request.attachment.previewKey
+    );
     addToast(
       'info',
       'Downloading 3D Model',
-      `Downloading ${request.attachment.fileName} (${request.attachment.fileSizeFormatted}).`
+      `Downloaded ${request.attachment.fileName} (${request.attachment.fileSizeFormatted}).`
     );
   };
 
@@ -121,7 +119,9 @@ export const StudentRequestDetailsPage: React.FC = () => {
             <div className="sm:col-span-5">
               <CadModelPreview
                 previewKey={request.attachment.previewKey}
-                className="w-full h-40"
+                storageKey={request.attachment.storageKey}
+                fileName={request.attachment.fileName}
+                className="w-full h-44"
               />
             </div>
 

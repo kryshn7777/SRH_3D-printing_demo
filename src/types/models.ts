@@ -51,6 +51,9 @@ export interface AttachmentMetadata {
   uploadedAt: string;
   dimensionsMm?: string;
   previewKey?: 'bracket-joint' | 'drone-mount' | 'enclosure-case' | 'sensor-housing' | 'generic-stl';
+  storageKey?: string;
+  triangleCount?: number;
+  volumeCm3?: number;
 }
 
 export interface PrintRequest {
