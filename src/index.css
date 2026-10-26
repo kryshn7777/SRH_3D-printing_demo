@@ -1,7 +1,60 @@
 @import "tailwindcss";
 
+@font-face {
+  font-display: swap;
+  font-family: 'SRHText';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/fonts/SRHText_W_Rg.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'SRHText';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/fonts/SRHText_W_Bd.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'SRHHeadline';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/fonts/SRHHeadline_W_Rg.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'SRHHeadline';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/fonts/SRHHeadline_W_Bd.woff2') format('woff2');
+}
+
 @layer base {
   :root {
+    /* Official srh-university.de TYPO3 / b_page--scheme-edu design tokens */
+    --color-primary: #d54407;
+    --color-primary-dark: #c12d00;
+    --color-primary-variant: #c54407;
+    --color-text-white: #ffffff;
+    --color-text-default: #575756;
+    --color-text-dark: #171717;
+    --color-bg-grey: #f5f4f3;
+    --color-border-grey: #dddad8;
+    --color-overline-secondary: #aaa39d;
+    --color-black-blue: #001725;
+    --color-blue-400: #00699a;
+    --color-anthracite: #37484e;
+    --color-yellow: #fcc61e;
+    --form-input-bg: #f5f4f3;
+    --form-input-border-color: #aaa39d;
+    --flow-gradient-stop-1: #ff6a30;
+    --flow-gradient-stop-2: #f45d27;
+    --flow-gradient-stop-3: #e9501e;
+
+    /* Application semantic aliases */
     --srh-primary: #D54407;
     --srh-primary-dark: #C12D00;
     --srh-anthracite: #37484E;
@@ -20,14 +73,116 @@
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'SRHText', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.3px;
     background-color: var(--srh-canvas);
     color: var(--srh-text);
+  }
+
+  h1, h2, h3, h4, .font-srh-headline {
+    font-family: 'SRHHeadline', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: 0.3px;
   }
 
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+/* Official SRH University (.b_*) component styles */
+.srh-stage-headline {
+  font-family: 'SRHHeadline', sans-serif;
+  font-weight: 700;
+  background-color: #D54407;
+  color: #FFFFFF;
+  display: inline;
+  line-height: 1.275;
+  padding: 2px 15px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.srh-overline {
+  font-family: 'SRHHeadline', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.166667em;
+  line-height: 18px;
+  text-transform: uppercase;
+  color: #D54407;
+}
+
+.srh-btn-primary {
+  align-items: center;
+  background-color: #D54407;
+  border-radius: 20px 20px 20px 2px;
+  color: #FFFFFF;
+  display: inline-flex;
+  font-family: 'SRHText', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 20px;
+  min-height: 50px;
+  padding: 14px 28px;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.srh-btn-primary:hover {
+  background-color: #C12D00;
+}
+
+.srh-btn-secondary {
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid #575756;
+  border-radius: 20px 20px 20px 2px;
+  color: #171717;
+  display: inline-flex;
+  font-family: 'SRHText', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 20px;
+  min-height: 48px;
+  padding: 12px 22px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.srh-btn-secondary:hover {
+  background-color: #F5F4F3;
+  border-color: #D54407;
+  color: #D54407;
+}
+
+.srh-textinput {
+  background-color: #F5F4F3;
+  border: none;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px #AAA39D;
+  color: #171717;
+  display: block;
+  width: 100%;
+  font-family: 'SRHText', sans-serif;
+  font-size: 16px;
+  line-height: 26px;
+  padding: 12px 20px;
+  transition: box-shadow 0.15s linear, background-color 0.15s linear;
+}
+
+.srh-textinput::placeholder {
+  color: #575756;
+  opacity: 0.6;
+}
+
+.srh-textinput:hover {
+  box-shadow: inset 0 0 0 2px #575756;
+}
+
+.srh-textinput:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  box-shadow: inset 0 0 0 2px #D54407;
 }
 
 /* Custom subtle scrollbars */
