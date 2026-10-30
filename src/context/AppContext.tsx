@@ -231,6 +231,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentUser = users.find((u) => u.id === currentUserId) ?? null;
 
+  // Every identity change except a Microsoft login drops the Microsoft session first,
+  // so password, demo-switch or reset logins can never reach a previous user's Graph token
+  const switchIdentity = (userId: string | null) => {
+    void signOutMicrosoft();
+    setCurrentUserId(userId);
+  };
+
   const addToast = (
     type: ToastNotification['type'],
     title: string,
@@ -280,7 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    setCurrentUserId(matched.id);
+    switchIdentity(matched.id);
     addToast('success', 'Signed In', `Welcome back, ${matched.name}!`);
     return { ok: true, data: matched };
   };
@@ -319,7 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchRoleUser = (userId: string) => {
     const target = users.find((u) => u.id === userId);
     if (target) {
-      setCurrentUserId(target.id);
+      switchIdentity(target.id);
       addToast(
         'info',
         `Switched Demo Role: ${target.role.replace('_', ' ')}`,
@@ -329,8 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
-    void signOutMicrosoft();
-    setCurrentUserId(null);
+    switchIdentity(null);
     addToast('info', 'Signed Out', 'You have logged out of the SRH 3D Printing System.');
   };
 
@@ -948,7 +954,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setApprovals(SEED_APPROVALS);
     setPcLogs(SEED_PC_LOGS);
     setAccessGrants(SEED_ACCESS_GRANTS);
-    setCurrentUserId('USR-STU-01');
+    switchIdentity('USR-STU-01');
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
     addToast(
       'info',

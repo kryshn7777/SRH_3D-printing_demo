@@ -16,6 +16,7 @@ const pcaPromise: Promise<IPublicClientApplication> | null = msalConfigured
           clientId: clientId!,
           authority: `https://login.microsoftonline.com/${tenantId}`,
           redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}redirect.html`,
+          postLogoutRedirectUri: `${window.location.origin}${import.meta.env.BASE_URL}redirect.html`,
         },
         cache: { cacheLocation: 'sessionStorage' },
       })
@@ -30,17 +31,24 @@ export async function signInWithMicrosoft(): Promise<{ email: string; name: stri
   const { account } = await pca.loginPopup({
     // Mail.Send consented at sign-in so submit-time notifications need no popup
     scopes: ['openid', 'profile', 'email', 'Mail.Send'],
-    prompt: 'select_account',
+    // Always ask for credentials: lab PCs are shared, so never reuse a lingering Microsoft session
+    prompt: 'login',
   });
   pca.setActiveAccount(account);
   return { email: account.username, name: account.name || account.username };
 }
 
-// Drops the cached Microsoft session so a shared lab PC can't reuse the last user's token.
+// Ends the Microsoft session (server side too, via logout popup) and drops cached tokens,
+// so the next person at a shared lab PC can't reuse the last user's mailbox access.
 export async function signOutMicrosoft(): Promise<void> {
   if (!pcaPromise) return;
   const pca = await pcaPromise;
+  const account = pca.getActiveAccount();
   pca.setActiveAccount(null);
+  if (account) {
+    // Best effort: a blocked popup still leaves the local cache cleared below
+    await pca.logoutPopup({ account }).catch(() => undefined);
+  }
   await pca.clearCache();
 }
 
