@@ -36,13 +36,27 @@ export async function signInWithMicrosoft(): Promise<{ email: string; name: stri
   return { email: account.username, name: account.name || account.username };
 }
 
+// Drops the cached Microsoft session so a shared lab PC can't reuse the last user's token.
+export async function signOutMicrosoft(): Promise<void> {
+  if (!pcaPromise) return;
+  const pca = await pcaPromise;
+  pca.setActiveAccount(null);
+  await pca.clearCache();
+}
+
 // Sends from the signed-in user's own Outlook mailbox via Microsoft Graph.
-// Resolves false (nothing sent) when not signed in with Microsoft, e.g. demo logins.
-export async function sendMail(to: string, subject: string, text: string): Promise<boolean> {
+// Resolves false (nothing sent) unless the Microsoft session belongs to `from`,
+// e.g. demo logins or a stale session left by another user.
+export async function sendMail(
+  from: string,
+  to: string,
+  subject: string,
+  text: string
+): Promise<boolean> {
   if (!pcaPromise) return false;
   const pca = await pcaPromise;
-  const account = pca.getActiveAccount() ?? pca.getAllAccounts()[0];
-  if (!account) return false;
+  const account = pca.getActiveAccount();
+  if (!account || account.username.toLowerCase() !== from.toLowerCase()) return false;
 
   const { accessToken } = await pca.acquireTokenSilent({ scopes: ['Mail.Send'], account });
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {

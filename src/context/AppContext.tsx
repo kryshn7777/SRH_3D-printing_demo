@@ -20,7 +20,7 @@ import {
   SEED_PC_LOGS,
   SEED_ACCESS_GRANTS,
 } from '../data/seedData';
-import { sendMail } from '../utils/msalAuth';
+import { sendMail, signOutMicrosoft } from '../utils/msalAuth';
 
 const STORAGE_KEYS = {
   CURRENT_USER_ID: 'srh_3dp_current_user_id_v4',
@@ -290,6 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const trimmed = email.trim().toLowerCase();
     let matched = users.find((u) => u.email.toLowerCase() === trimmed);
     if (matched && !matched.active) {
+      void signOutMicrosoft();
       return {
         ok: false,
         error: 'This account is currently deactivated. Contact the PC Administrator.',
@@ -328,6 +329,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    void signOutMicrosoft();
     setCurrentUserId(null);
     addToast('info', 'Signed Out', 'You have logged out of the SRH 3D Printing System.');
   };
@@ -365,7 +367,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `3D model: ${req.attachment.fileName} (${req.attachment.fileSizeFormatted})`,
       `Submitted: ${req.submissionDateTimeFormatted}`,
     ].join('\n');
-    sendMail(to, `3D print request #${req.id}: ${req.projectTitle} (${req.studentName})`, text)
+    sendMail(req.studentEmail, to, `3D print request #${req.id}: ${req.projectTitle} (${req.studentName})`, text)
       .then((sent) => {
         if (sent) addToast('info', 'Email Sent', `${req.contactedApprover} was notified via Outlook.`);
       })
