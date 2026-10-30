@@ -13,7 +13,7 @@
 
 ## Architecture Summary
 - **Stack**: React 19, TypeScript, Vite 6, Tailwind CSS v4, React Router v7, Lucide Icons.
-- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v3` in `src/context/AppContext.tsx`.
+- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v4` in `src/context/AppContext.tsx`.
 - **Seeded Demo Identities**:
   - **Student**: `Anna Müller` (`anna.mueller@srh-berlin.de`)
   - **Professor**: `Ajinkya Keskar` (`ajinkya.keskar@srh-berlin.de`)

@@ -11,7 +11,13 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DEPARTMENTS } from '../data/seedData';
-import { SupportedMaterial, AttachmentMetadata } from '../types/models';
+import {
+  SupportedMaterial,
+  AttachmentMetadata,
+  ApprovalContact,
+  ALL_MATERIALS,
+  APPROVAL_CONTACTS,
+} from '../types/models';
 import { CadModelPreview } from '../components/PrinterIllustration';
 import {
   saveModelBlob,
@@ -20,6 +26,39 @@ import {
 } from '../utils/stlStorageAndParser';
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
+const ChoiceGroup: React.FC<{
+  legend: string;
+  name: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  columns: string;
+}> = ({ legend, name, options, value, onChange, columns }) => (
+  <fieldset>
+    <legend className="block text-xs font-semibold text-slate-800 mb-1.5">
+      {legend} <span className="text-red-500">*</span>
+    </legend>
+    <div className={`grid gap-1.5 ${columns}`}>
+      {options.map((o) => (
+        <label
+          key={o.value}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer hover:bg-slate-50 has-checked:border-[#1662F3] has-checked:bg-blue-50 has-checked:text-[#1662F3]"
+        >
+          <input
+            type="radio"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+            className="accent-[#1662F3]"
+          />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  </fieldset>
+);
 const ALLOWED_EXTENSIONS = ['stl', '3mf', 'obj'];
 
 export const NewRequestPage: React.FC = () => {
@@ -33,40 +72,32 @@ export const NewRequestPage: React.FC = () => {
     ? requests.find((r) => r.id === editDraftId)
     : undefined;
 
-  // Project Information state
+  // Student details state
+  const [matriculationNumber, setMatriculationNumber] = useState(
+    existingDraft?.matriculationNumber || ''
+  );
+  const [courseOrDepartment, setCourseOrDepartment] = useState(
+    existingDraft?.courseOrDepartment || currentUser?.department || ''
+  );
+
+  // Print details state
   const [projectTitle, setProjectTitle] = useState(
     existingDraft?.projectTitle || ''
   );
-  const [courseOrDepartment, setCourseOrDepartment] = useState(
-    existingDraft?.courseOrDepartment || ''
-  );
-  const [description, setDescription] = useState(
-    existingDraft?.description || ''
-  );
-  const [purpose, setPurpose] = useState(
-    existingDraft?.purpose ||
-      'Required for semester engineering coursework and prototype evaluation.'
+  const [quantity, setQuantity] = useState<number>(
+    existingDraft?.quantity || 1
   );
   const [intendedUse, setIntendedUse] = useState(
-    existingDraft?.intendedUse ||
-      'Functional testing, assembly verification, and academic demonstration.'
+    existingDraft?.intendedUse || ''
   );
-
-  // Printer and Material state
+  const [contactedApprover, setContactedApprover] = useState<
+    ApprovalContact | ''
+  >(existingDraft?.contactedApprover || 'Ajinkya Keskar');
   const [printerId, setPrinterId] = useState(
     existingDraft?.printerId || preselectedPrinterId || ''
   );
   const [material, setMaterial] = useState<SupportedMaterial | ''>(
     existingDraft?.material || ''
-  );
-  const [estimatedDuration, setEstimatedDuration] = useState(
-    existingDraft?.estimatedDuration || ''
-  );
-  const [quantity, setQuantity] = useState<number>(
-    existingDraft?.quantity || 1
-  );
-  const [requestedDateTime, setRequestedDateTime] = useState(
-    existingDraft?.requestedDateTime || ''
   );
 
   // File Upload state
@@ -82,13 +113,13 @@ export const NewRequestPage: React.FC = () => {
   const selectedPrinter = printers.find((p) => p.id === printerId);
   const availableMaterials: SupportedMaterial[] = selectedPrinter
     ? selectedPrinter.supportedMaterials
-    : ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC'];
+    : ALL_MATERIALS;
 
   const handlePrinterChange = (newPrinterId: string) => {
     setPrinterId(newPrinterId);
     const pr = printers.find((p) => p.id === newPrinterId);
     if (pr && material && !pr.supportedMaterials.includes(material)) {
-      setMaterial(pr.supportedMaterials[0]);
+      setMaterial('');
     }
   };
 
@@ -190,21 +221,14 @@ export const NewRequestPage: React.FC = () => {
   };
 
   const fillSampleProject = () => {
-    setProjectTitle('Autonomous Rover Gripper Bracket');
+    setMatriculationNumber('1100421');
     setCourseOrDepartment('B.Eng. Applied Mechatronic Systems');
-    setDescription(
-      'Reinforced servo actuator mounting bracket for a 2-finger parallel gripper used in the Mechatronics Lab.'
-    );
-    setPurpose(
-      'Required for MECH-401 Robotics Subsystem Integration practical assessment.'
-    );
-    setIntendedUse(
-      'Functional mechanical load testing and end-effector assembly.'
-    );
-    setPrinterId('PR-02');
+    setProjectTitle('Rover gripper bracket');
+    setQuantity(2);
+    setIntendedUse('Rover part');
+    setContactedApprover('Ajinkya Keskar');
+    setPrinterId('PR-05');
     setMaterial('PETG');
-    setEstimatedDuration('4.5 hours');
-    setQuantity(1);
     attachSampleStl();
     setFormErrors([]);
   };
@@ -212,31 +236,23 @@ export const NewRequestPage: React.FC = () => {
   const validateForm = (isDraft: boolean): boolean => {
     const errs: string[] = [];
     if (!projectTitle.trim()) {
-      errs.push('Project Title is required.');
+      errs.push('Print Item is required.');
     }
     if (!isDraft) {
       if (!courseOrDepartment.trim()) {
         errs.push('Course / Department is required.');
       }
-      if (!description.trim() || description.trim().length < 10) {
-        errs.push(
-          'Detailed Description is required (minimum 10 characters explaining what you want to print).'
-        );
-      }
-      if (!purpose.trim()) {
-        errs.push('Academic reason / why the print is required must be specified.');
-      }
       if (!intendedUse.trim()) {
-        errs.push('Intended use of the printed object is required.');
+        errs.push('Intended Use is required.');
+      }
+      if (!contactedApprover) {
+        errs.push('Please select whom you contacted for approval / support.');
       }
       if (!printerId) {
-        errs.push('Please select a target FDM Printer.');
+        errs.push('Please select the 3D Printer used.');
       }
       if (!material) {
-        errs.push('Please select a Filament Material.');
-      }
-      if (!estimatedDuration.trim()) {
-        errs.push('Estimated Print Time is required (e.g. 4 hours).');
+        errs.push('Please select the Filament used.');
       }
       if (!quantity || quantity < 1 || quantity > 50) {
         errs.push('Quantity must be between 1 and 50.');
@@ -260,20 +276,15 @@ export const NewRequestPage: React.FC = () => {
     const chosenMaterial =
       (material as SupportedMaterial) || chosenPrinter.supportedMaterials[0];
 
-    const parsedHours = parseFloat(estimatedDuration) || 3;
-
     const result = createOrSubmitRequest({
-      projectTitle: projectTitle || 'Untitled Draft Project',
+      matriculationNumber,
+      projectTitle: projectTitle || 'Untitled Draft Print',
       courseOrDepartment: courseOrDepartment || DEPARTMENTS[0],
-      description: description || 'Draft description pending completion.',
-      purpose: purpose || 'Academic coursework prototype.',
-      intendedUse: intendedUse || 'Functional prototype evaluation.',
+      intendedUse: intendedUse || 'Test print',
+      contactedApprover: contactedApprover || 'Ajinkya Keskar',
       printerId: chosenPrinter.id,
       material: chosenMaterial,
-      estimatedDuration: estimatedDuration || '3 hours',
-      estimatedHoursNumeric: parsedHours,
       quantity: quantity || 1,
-      requestedDateTime: requestedDateTime || undefined,
       attachment: attachment || {
         fileName: 'draft_model.stl',
         fileSizeBytes: 1048576,
@@ -304,10 +315,10 @@ export const NewRequestPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            New Printer Request
+            3D Print Request
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Provide the details of your project and printing requirements.
+            Fill in the lab print form and attach your 3D model.
           </p>
         </div>
 
@@ -349,205 +360,102 @@ export const NewRequestPage: React.FC = () => {
         className="space-y-6"
       >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
-          {/* Column 1: Project Information */}
-          <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold text-slate-900">
-                Project Information
-              </h2>
+          {/* Column 1: Student & Print Details (form questions 1–6) */}
+          <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col space-y-4">
+            <h2 className="text-sm font-bold text-slate-900">
+              Student &amp; Print Details
+            </h2>
 
-              <div>
-                <label
-                  htmlFor="req-project-title"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Project Title <span className="text-red-500">*</span>
-                </label>
+            <div>
+              <label
+                htmlFor="req-full-name"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                1. Full Name of Student
+              </label>
+              <input
+                id="req-full-name"
+                type="text"
+                value={currentUser?.name || ''}
+                readOnly
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-700"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="req-matriculation"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                2. Matriculation Number
+              </label>
+              <input
+                id="req-matriculation"
+                type="text"
+                inputMode="numeric"
+                value={matriculationNumber}
+                onChange={(e) => setMatriculationNumber(e.target.value)}
+                placeholder="e.g. 1100421"
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="req-email"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                3. University Mail <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="req-email"
+                type="email"
+                value={currentUser?.email || ''}
+                readOnly
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-700"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="req-department"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                4. Course / Department <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="req-department"
+                value={courseOrDepartment}
+                onChange={(e) => setCourseOrDepartment(e.target.value)}
+                required
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+              >
+                <option value="">Select course / department</option>
+                {DEPARTMENTS.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="req-print-item"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                5. Print Item &amp; Quantity <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
                 <input
-                  id="req-project-title"
+                  id="req-print-item"
                   type="text"
                   value={projectTitle}
                   onChange={(e) => setProjectTitle(e.target.value)}
-                  placeholder="e.g. Drone bracket"
+                  placeholder="e.g. Wheel hub"
                   required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+                  className="min-w-0 flex-1 px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-department"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Course / Department <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="req-department"
-                  value={courseOrDepartment}
-                  onChange={(e) => setCourseOrDepartment(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                >
-                  <option value="">Select department</option>
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-description"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Detailed Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="req-description"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Explain what you want to print and why..."
-                  required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                />
-              </div>
-
-              <div className="space-y-4 pt-1">
-                <div>
-                  <label
-                    htmlFor="req-purpose"
-                    className="block text-xs font-semibold text-slate-800 mb-1.5"
-                  >
-                    Why Print is Required (Academic Justification) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="req-purpose"
-                    type="text"
-                    value={purpose}
-                    onChange={(e) => setPurpose(e.target.value)}
-                    placeholder="e.g. Course milestone, thesis prototype, lab assignment"
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="req-intended-use"
-                    className="block text-xs font-semibold text-slate-800 mb-1.5"
-                  >
-                    Intended Use of Printed Object <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="req-intended-use"
-                    type="text"
-                    value={intendedUse}
-                    onChange={(e) => setIntendedUse(e.target.value)}
-                    placeholder="e.g. Functional mechanical test, fit check, assembly"
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-              <span className="font-medium text-slate-500">Applicant:</span>
-              <span className="font-semibold text-slate-800 truncate ml-2">
-                {currentUser?.name || 'Anna Müller'} ({currentUser?.email || 'anna.mueller@srh-berlin.de'})
-              </span>
-            </div>
-          </section>
-
-          {/* Column 2: Printer and Material */}
-          <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold text-slate-900">
-                Printer and Material
-              </h2>
-
-              <div>
-                <label
-                  htmlFor="req-printer"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Select Printer <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="req-printer"
-                  value={printerId}
-                  onChange={(e) => handlePrinterChange(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                >
-                  <option value="">Choose a printer</option>
-                  {printers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.id}) — {p.availabilityStatus}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-material"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Material <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="req-material"
-                  value={material}
-                  onChange={(e) =>
-                    setMaterial(e.target.value as SupportedMaterial)
-                  }
-                  required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                >
-                  <option value="">Select material</option>
-                  {availableMaterials.map((mat) => (
-                    <option key={mat} value={mat}>
-                      {mat}
-                    </option>
-                  ))}
-                </select>
-                {selectedPrinter && (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Supported on {selectedPrinter.name}:{' '}
-                    <span className="font-semibold text-slate-700">
-                      {selectedPrinter.supportedMaterials.join(', ')}
-                    </span>
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-duration"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Estimated Print Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="req-duration"
-                  type="text"
-                  value={estimatedDuration}
-                  onChange={(e) => setEstimatedDuration(e.target.value)}
-                  placeholder="e.g. 6 hours"
-                  required
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-quantity"
-                  className="block text-xs font-semibold text-slate-800 mb-1.5"
-                >
-                  Quantity
-                </label>
                 <input
                   id="req-quantity"
                   type="number"
@@ -557,33 +465,63 @@ export const NewRequestPage: React.FC = () => {
                   onChange={(e) =>
                     setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))
                   }
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="req-datetime"
-                  className="block text-[11px] font-semibold text-slate-700 mb-1"
-                >
-                  Preferred Print Slot (Optional)
-                </label>
-                <input
-                  id="req-datetime"
-                  type="datetime-local"
-                  value={requestedDateTime}
-                  onChange={(e) => setRequestedDateTime(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+                  aria-label="Quantity"
+                  className="w-20 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-              <span className="font-medium text-slate-500">Selected Machine:</span>
-              <span className="font-semibold text-slate-800 truncate ml-2">
-                {selectedPrinter?.name || 'None selected'}
-              </span>
+            <div>
+              <label
+                htmlFor="req-intended-use"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                6. Intended Use <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="req-intended-use"
+                type="text"
+                value={intendedUse}
+                onChange={(e) => setIntendedUse(e.target.value)}
+                placeholder="e.g. rover part, prototype, test print"
+                required
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+              />
             </div>
+          </section>
+
+          {/* Column 2: Approval, Printer & Filament (form questions 7–9) */}
+          <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col space-y-4">
+            <h2 className="text-sm font-bold text-slate-900">
+              Approval, Printer &amp; Filament
+            </h2>
+
+            <ChoiceGroup
+              legend="7. Whom did you contact for approval/support?"
+              name="req-approver"
+              options={APPROVAL_CONTACTS.map((c) => ({ value: c, label: c }))}
+              value={contactedApprover}
+              onChange={(v) => setContactedApprover(v as ApprovalContact)}
+              columns="grid-cols-1"
+            />
+
+            <ChoiceGroup
+              legend="8. 3D Printer Used"
+              name="req-printer"
+              options={printers.map((p) => ({ value: p.id, label: p.name }))}
+              value={printerId}
+              onChange={handlePrinterChange}
+              columns="grid-cols-1 sm:grid-cols-2"
+            />
+
+            <ChoiceGroup
+              legend="9. Filament Used"
+              name="req-material"
+              options={availableMaterials.map((m) => ({ value: m, label: m }))}
+              value={material}
+              onChange={(v) => setMaterial(v as SupportedMaterial)}
+              columns="grid-cols-2 sm:grid-cols-3"
+            />
           </section>
 
           {/* Column 3: Upload Files */}

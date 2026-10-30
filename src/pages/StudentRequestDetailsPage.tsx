@@ -128,7 +128,7 @@ export const StudentRequestDetailsPage: React.FC = () => {
             <div className="sm:col-span-7 space-y-2.5 text-xs">
               <div>
                 <span className="text-slate-400 font-medium block">
-                  Project Title
+                  Print Item
                 </span>
                 <span className="text-slate-900 font-bold text-sm">
                   {request.projectTitle}
@@ -137,10 +137,10 @@ export const StudentRequestDetailsPage: React.FC = () => {
 
               <div>
                 <span className="text-slate-400 font-medium block">
-                  Description
+                  Intended Use
                 </span>
                 <p className="text-slate-700 leading-relaxed mt-0.5">
-                  {request.description}
+                  {request.intendedUse}
                 </p>
               </div>
 
@@ -165,10 +165,11 @@ export const StudentRequestDetailsPage: React.FC = () => {
 
               <div className="pt-1 border-t border-slate-100">
                 <span className="text-slate-400 font-medium block">
-                  Academic Purpose & Intended Use
+                  Contacted for Approval / Support
                 </span>
                 <span className="text-slate-600 block mt-0.5">
-                  {request.purpose} — {request.intendedUse}
+                  {request.contactedApprover}
+                  {request.matriculationNumber && ` • Matr. ${request.matriculationNumber}`}
                 </span>
               </div>
             </div>
@@ -194,15 +195,6 @@ export const StudentRequestDetailsPage: React.FC = () => {
                 <span className="text-slate-400 font-medium block">Material</span>
                 <span className="text-slate-900 font-semibold text-[13px]">
                   {request.material}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-slate-400 font-medium block">
-                  Estimated Print Time
-                </span>
-                <span className="text-slate-900 font-semibold text-[13px]">
-                  {request.estimatedDuration}
                 </span>
               </div>
 

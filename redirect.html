@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Microsoft Authentication</title>
+  </head>
+  <body>
+    <!-- MSAL redirect bridge: hands the Entra ID response back to the login popup's opener -->
+    <script type="module">
+      import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge';
+      broadcastResponseToMainFrame();
+    </script>
+  </body>
+</html>

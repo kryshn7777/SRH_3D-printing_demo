@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DEPARTMENTS } from '../data/seedData';
+import { msalConfigured, signInWithMicrosoft } from '../utils/msalAuth';
 
 export const LoginPage: React.FC = () => {
-  const { loginByEmail, switchRoleUser, users } = useApp();
+  const { loginByEmail, loginWithMicrosoft, switchRoleUser, users } = useApp();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('anna.mueller@srh-berlin.de');
@@ -44,6 +45,26 @@ export const LoginPage: React.FC = () => {
       return;
     }
     routeForRole(res.data.role);
+  };
+
+  const handleMicrosoftLogin = async () => {
+    setError(null);
+    if (!msalConfigured) {
+      setSsoOpen(true);
+      return;
+    }
+    try {
+      const { email: msEmail, name } = await signInWithMicrosoft();
+      const res = loginWithMicrosoft(msEmail, name);
+      if (!res.ok || !res.data) {
+        setError(res.error || 'Microsoft sign-in failed.');
+        return;
+      }
+      routeForRole(res.data.role);
+    } catch (err) {
+      if ((err as { errorCode?: string }).errorCode === 'user_cancelled') return;
+      setError(`Microsoft sign-in failed: ${(err as Error).message}`);
+    }
   };
 
   const handleQuickDemoLogin = (userId: string) => {
@@ -552,7 +573,7 @@ export const LoginPage: React.FC = () => {
             {/* Official SRH .b_button--secondary speech-bubble button for Microsoft SSO */}
             <button
               type="button"
-              onClick={() => setSsoOpen(true)}
+              onClick={() => void handleMicrosoftLogin()}
               className="srh-btn-secondary w-full gap-2.5 cursor-pointer"
             >
               <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
@@ -880,7 +901,9 @@ export const LoginPage: React.FC = () => {
               </button>
             </div>
             <p className="text-[14px] text-[#575756] mt-3">
-              Select a seeded SRH Berlin campus identity to complete simulated single sign-on:
+              Real Microsoft sign-in is not configured yet (set VITE_MSAL_CLIENT_ID and
+              VITE_MSAL_TENANT_ID). Select a seeded SRH Berlin campus identity to complete simulated
+              single sign-on:
             </p>
             <div className="mt-4 space-y-2.5">
               {users.map((u) => (
@@ -1001,22 +1024,23 @@ export const LoginPage: React.FC = () => {
             {infoModal === 'printers' && (
               <div className="mt-4 space-y-2 text-[14px] text-[#575756]">
                 <p>
-                  Our Berlin MakerLab operates industrial and prosumer FDM systems:
+                  Our Berlin MakerLab operates these printers:
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-[#171717]">
                   <li>
-                    <strong>Prusa MK4 (PR-01):</strong> 250 × 210 × 220 mm • PLA, PETG, ABS
+                    <strong>Bambu P1P - 528 / 537 / 623 / 763:</strong> 256 × 256 × 256 mm • open frame
                   </li>
                   <li>
-                    <strong>Ultimaker S5 (PR-02):</strong> 330 × 240 × 300 mm • PLA, PETG, TPU
+                    <strong>Bambu X1C:</strong> 256 × 256 × 256 mm • enclosed, hardened nozzle
                   </li>
                   <li>
-                    <strong>Creality K1 (PR-03):</strong> 220 × 220 × 250 mm • PLA, PETG, ABS
+                    <strong>Voron 2.4 - 1 / 2 / 3:</strong> enclosed CoreXY
                   </li>
                   <li>
-                    <strong>Bambu Lab X1E (PR-04):</strong> 256 × 256 × 256 mm • PLA, PETG, ABS, ASA, PC
+                    <strong>Form Labs - Form 3:</strong> 145 × 145 × 185 mm • resin (SLA)
                   </li>
                 </ul>
+                <p>Filaments: PLA, PETG, ABS, ASA, PA6 CF, TPU</p>
               </div>
             )}
 

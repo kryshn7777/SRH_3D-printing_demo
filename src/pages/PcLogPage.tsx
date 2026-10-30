@@ -58,7 +58,7 @@ export const PcLogPage: React.FC = () => {
       'Log ID',
       'Request ID',
       'Student',
-      'Project Title',
+      'Print Item',
       'Printer',
       'Material',
       'Professor Approval',
@@ -182,7 +182,7 @@ export const PcLogPage: React.FC = () => {
                 <tr className="border-b border-slate-200/80 bg-slate-50/70 text-xs font-bold text-slate-700">
                   <th className="py-3.5 pl-4 pr-2">Request ID</th>
                   <th className="py-3.5 px-2.5">Student</th>
-                  <th className="py-3.5 px-2.5">Project Title</th>
+                  <th className="py-3.5 px-2.5">Print Item</th>
                   <th className="py-3.5 px-2.5">Printer</th>
                   <th className="py-3.5 px-2.5">Material</th>
                   <th className="py-3.5 px-2.5">Professor Approval</th>
@@ -289,7 +289,7 @@ export const PcLogPage: React.FC = () => {
 
               <div>
                 <span className="text-slate-400 font-medium block">
-                  Project Title
+                  Print Item
                 </span>
                 <span className="text-slate-900 font-semibold text-[13px]">
                   {selectedLog.projectTitle}
@@ -299,10 +299,10 @@ export const PcLogPage: React.FC = () => {
               {selectedRequest && (
                 <div>
                   <span className="text-slate-400 font-medium block">
-                    Description
+                    Intended Use
                   </span>
                   <p className="text-slate-700 leading-relaxed mt-0.5">
-                    {selectedRequest.description}
+                    {selectedRequest.intendedUse}
                   </p>
                 </div>
               )}

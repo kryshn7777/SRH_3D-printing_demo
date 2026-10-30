@@ -165,12 +165,13 @@ export const ProfessorReviewPage: React.FC = () => {
               </span>
               <span className="text-slate-500 block text-[11px]">
                 {request.courseOrDepartment} • {request.studentEmail}
+                {request.matriculationNumber && ` • Matr. ${request.matriculationNumber}`}
               </span>
             </div>
 
             <div>
               <span className="text-slate-400 font-medium block">
-                Project Title
+                Print Item
               </span>
               <span className="text-slate-900 font-semibold text-[13px]">
                 {request.projectTitle}
@@ -179,19 +180,19 @@ export const ProfessorReviewPage: React.FC = () => {
 
             <div>
               <span className="text-slate-400 font-medium block">
-                Description
+                Intended Use
               </span>
               <p className="text-slate-700 leading-relaxed mt-0.5">
-                {request.description}
+                {request.intendedUse}
               </p>
             </div>
 
             <div className="pt-2 border-t border-slate-100">
               <span className="text-slate-400 font-medium block">
-                Academic Purpose &amp; Intended Use
+                Contacted for Approval / Support
               </span>
               <p className="text-slate-600 mt-0.5">
-                {request.purpose} ({request.intendedUse})
+                {request.contactedApprover}
               </p>
             </div>
           </div>
@@ -209,15 +210,6 @@ export const ProfessorReviewPage: React.FC = () => {
               <span className="text-slate-400 font-medium block">Material</span>
               <span className="text-slate-900 font-semibold text-[13px]">
                 {request.material}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-slate-400 font-medium block">
-                Estimated Print Time
-              </span>
-              <span className="text-slate-900 font-semibold text-[13px]">
-                {request.estimatedDuration}
               </span>
             </div>
 

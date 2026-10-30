@@ -18,7 +18,7 @@ export const MaterialsPage: React.FC = () => {
       name: 'Polylactic Acid (Standard Prototyping)',
       nozzleTemp: '205 – 220 °C',
       bedTemp: '55 – 60 °C',
-      printers: 'Prusa MK4, Ultimaker S5, Creality K1, Bambu Lab X1E',
+      printers: 'Bambu P1P (×4), Bambu X1C, Voron 2.4 (×3)',
       useCase:
         'Visual models, architectural forms, low-stress brackets, and rapid concept verification.',
     },
@@ -27,7 +27,7 @@ export const MaterialsPage: React.FC = () => {
       name: 'Glycol-Modified PET (Mechanical & Robotics)',
       nozzleTemp: '235 – 250 °C',
       bedTemp: '75 – 85 °C',
-      printers: 'Prusa MK4, Ultimaker S5, Creality K1, Bambu Lab X1E',
+      printers: 'Bambu P1P (×4), Bambu X1C, Voron 2.4 (×3)',
       useCase:
         'Robotic arm joints, functional snap-fits, sensor mounts, and impact-resistant assemblies.',
     },
@@ -36,7 +36,7 @@ export const MaterialsPage: React.FC = () => {
       name: 'Acrylonitrile Butadiene Styrene (Thermal & Enclosure)',
       nozzleTemp: '245 – 260 °C',
       bedTemp: '95 – 105 °C',
-      printers: 'Prusa MK4, Creality K1, Bambu Lab X1E',
+      printers: 'Bambu X1C, Voron 2.4 (×3)',
       useCase:
         'Higher temperature electronics housings and structural components requiring acetone smoothing.',
     },
@@ -45,9 +45,27 @@ export const MaterialsPage: React.FC = () => {
       name: 'Thermoplastic Polyurethane 95A (Flexible Elastomer)',
       nozzleTemp: '220 – 235 °C',
       bedTemp: '50 – 60 °C',
-      printers: 'Ultimaker S5',
+      printers: 'Bambu P1P (×4), Bambu X1C, Voron 2.4 (×3)',
       useCase:
         'Vibration dampers, soft robotic grippers, gaskets, and protective bumpers.',
+    },
+    {
+      code: 'ASA',
+      name: 'Acrylonitrile Styrene Acrylate (UV & Outdoor)',
+      nozzleTemp: '240 – 260 °C',
+      bedTemp: '90 – 100 °C',
+      printers: 'Bambu X1C, Voron 2.4 (×3)',
+      useCase:
+        'Outdoor rover parts, UV-exposed housings, and weather-resistant brackets.',
+    },
+    {
+      code: 'PA6 CF',
+      name: 'Carbon-Fibre Reinforced Nylon 6 (High Strength)',
+      nozzleTemp: '260 – 290 °C',
+      bedTemp: '80 – 100 °C',
+      printers: 'Bambu X1C (hardened steel nozzle)',
+      useCase:
+        'Stiff structural parts, drivetrain mounts, and load-bearing rover components. Dry filament before printing.',
     },
   ];
 

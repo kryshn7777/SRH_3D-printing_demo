@@ -36,13 +36,15 @@ export const ProfessorDashboardPage: React.FC = () => {
     setSearchParams({ tab });
   };
 
-  // Scope requests to Professor's assigned departments
+  // Scope requests to Professor's assigned departments and to requests sent to them
   const allowedDepts = currentUser?.assignedDepartments || DEPARTMENTS;
 
   const scopedRequests = requests.filter(
     (r) =>
       r.currentStatus !== 'DRAFT' &&
-      allowedDepts.includes(r.courseOrDepartment)
+      allowedDepts.includes(r.courseOrDepartment) &&
+      (currentUser?.role !== 'PROFESSOR' ||
+        r.contactedApprover === currentUser.name)
   );
 
   const pendingRequests = scopedRequests.filter(
@@ -276,14 +278,14 @@ export const ProfessorDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Table matching Screen 7 columns: #, Student, Project Title, Printer, Material, Submitted, Action */}
+        {/* Table matching Screen 7 columns: #, Student, Print Item, Printer, Material, Submitted, Action */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200/80 bg-slate-50/50 text-xs font-bold text-slate-700">
                 <th className="py-3.5 pl-5 pr-3">#</th>
                 <th className="py-3.5 px-3">Student</th>
-                <th className="py-3.5 px-3">Project Title</th>
+                <th className="py-3.5 px-3">Print Item</th>
                 <th className="py-3.5 px-3">Printer</th>
                 <th className="py-3.5 px-3">Material</th>
                 <th className="py-3.5 px-3">Submitted</th>

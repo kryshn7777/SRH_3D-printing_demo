@@ -201,7 +201,7 @@ export const PcFinalApprovalPage: React.FC = () => {
               {request.studentName} ({request.courseOrDepartment})
             </span>
 
-            <span className="text-slate-500 font-medium">Project</span>
+            <span className="text-slate-500 font-medium">Print Item</span>
             <span className="col-span-2 font-semibold text-slate-900">
               {request.projectTitle}
             </span>
@@ -216,9 +216,9 @@ export const PcFinalApprovalPage: React.FC = () => {
               {request.material}
             </span>
 
-            <span className="text-slate-500 font-medium">Estimated Time</span>
+            <span className="text-slate-500 font-medium">Quantity</span>
             <span className="col-span-2 font-semibold text-slate-900">
-              {request.estimatedDuration} (Qty: {request.quantity})
+              {request.quantity}
             </span>
 
             <span className="text-slate-500 font-medium">3D Model File</span>
@@ -253,10 +253,10 @@ export const PcFinalApprovalPage: React.FC = () => {
 
           <div className="pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-400 font-medium block">
-              Project Description
+              Intended Use
             </span>
             <p className="text-slate-700 mt-0.5 leading-relaxed">
-              {request.description}
+              {request.intendedUse}
             </p>
           </div>
         </section>

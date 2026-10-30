@@ -300,14 +300,14 @@ export const PcAdminDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Table matching Screen 9 columns: #, Student, Project Title, Professor, Submitted, Action */}
+            {/* Table matching Screen 9 columns: #, Student, Print Item, Professor, Submitted, Action */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200/80 bg-slate-50/50 text-xs font-bold text-slate-700">
                     <th className="py-3.5 pl-5 pr-3">#</th>
                     <th className="py-3.5 px-3">Student</th>
-                    <th className="py-3.5 px-3">Project Title</th>
+                    <th className="py-3.5 px-3">Print Item</th>
                     <th className="py-3.5 px-3">Professor</th>
                     <th className="py-3.5 px-3">Submitted</th>
                     <th className="py-3.5 pl-3 pr-5 text-right">Action</th>

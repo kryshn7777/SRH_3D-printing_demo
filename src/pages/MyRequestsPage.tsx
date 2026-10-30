@@ -183,7 +183,7 @@ export const MyRequestsPage: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200/80 bg-slate-50/60 text-xs font-bold text-slate-700">
                 <th className="py-3.5 pl-5 pr-3">Request ID</th>
-                <th className="py-3.5 px-3">Project Title</th>
+                <th className="py-3.5 px-3">Print Item</th>
                 <th className="py-3.5 px-3">Printer</th>
                 <th className="py-3.5 px-3">Material</th>
                 <th className="py-3.5 px-3">Submission Date</th>

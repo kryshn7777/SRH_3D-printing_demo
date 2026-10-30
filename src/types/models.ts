@@ -13,7 +13,13 @@ export type RequestStatus =
 
 export type PrinterAvailability = 'Available' | 'In Use' | 'Maintenance';
 
-export type SupportedMaterial = 'PLA' | 'PETG' | 'ABS' | 'TPU' | 'ASA' | 'PC';
+export type SupportedMaterial = 'PLA' | 'PETG' | 'ABS' | 'ASA' | 'PA6 CF' | 'TPU';
+
+export const ALL_MATERIALS: SupportedMaterial[] = ['PLA', 'PETG', 'ABS', 'ASA', 'PA6 CF', 'TPU'];
+
+export type ApprovalContact = 'Ajinkya Keskar';
+
+export const APPROVAL_CONTACTS: ApprovalContact[] = ['Ajinkya Keskar'];
 
 export interface User {
   id: string;
@@ -29,9 +35,9 @@ export interface User {
 
 export interface Printer {
   id: string; // e.g. 'PR-01'
-  name: string; // e.g. 'Prusa MK4'
+  name: string; // e.g. 'Bambu P1P - 528'
   model: string;
-  technology: 'FDM';
+  technology: 'FDM' | 'SLA';
   buildVolume: string; // e.g. '250 × 210 × 220 mm'
   supportedMaterials: SupportedMaterial[];
   availabilityStatus: PrinterAvailability;
@@ -61,18 +67,15 @@ export interface PrintRequest {
   studentId: string;
   studentName: string;
   studentEmail: string;
-  projectTitle: string;
+  matriculationNumber: string;
+  projectTitle: string; // Print item
   courseOrDepartment: string;
-  description: string;
-  purpose: string; // Academic purpose / why required
-  intendedUse: string; // Functional testing, thesis prototype, etc.
+  intendedUse: string; // Rover part, prototype, test print, etc.
+  contactedApprover: ApprovalContact;
   printerId: string;
   printerName: string;
   material: SupportedMaterial;
-  estimatedDuration: string; // e.g. '4 hours'
-  estimatedHoursNumeric: number;
   quantity: number;
-  requestedDateTime?: string;
   attachment: AttachmentMetadata;
   submissionTimestamp: string; // ISO string
   submissionDateFormatted: string; // e.g. '10 Oct 2024'

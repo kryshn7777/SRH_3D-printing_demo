@@ -166,7 +166,7 @@ export const StudentDashboardPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-200/80 text-[12px] font-bold text-slate-700 bg-slate-50/50">
                   <th className="py-3 pl-5 pr-3">#</th>
-                  <th className="py-3 px-3">Project Title</th>
+                  <th className="py-3 px-3">Print Item</th>
                   <th className="py-3 px-3">Printer</th>
                   <th className="py-3 px-3">Material</th>
                   <th className="py-3 px-3">Status</th>

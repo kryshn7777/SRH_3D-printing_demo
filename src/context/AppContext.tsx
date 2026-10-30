@@ -10,6 +10,7 @@ import {
   SupportedMaterial,
   PrinterAvailability,
   AttachmentMetadata,
+  ApprovalContact,
 } from '../types/models';
 import {
   SEED_USERS,
@@ -19,15 +20,16 @@ import {
   SEED_PC_LOGS,
   SEED_ACCESS_GRANTS,
 } from '../data/seedData';
+import { sendMail } from '../utils/msalAuth';
 
 const STORAGE_KEYS = {
-  CURRENT_USER_ID: 'srh_3dp_current_user_id_v3',
-  USERS: 'srh_3dp_users_v3',
-  PRINTERS: 'srh_3dp_printers_v3',
-  REQUESTS: 'srh_3dp_requests_v3',
-  APPROVALS: 'srh_3dp_approvals_v3',
-  PC_LOGS: 'srh_3dp_pc_logs_v3',
-  ACCESS_GRANTS: 'srh_3dp_access_grants_v3',
+  CURRENT_USER_ID: 'srh_3dp_current_user_id_v4',
+  USERS: 'srh_3dp_users_v4',
+  PRINTERS: 'srh_3dp_printers_v4',
+  REQUESTS: 'srh_3dp_requests_v4',
+  APPROVALS: 'srh_3dp_approvals_v4',
+  PC_LOGS: 'srh_3dp_pc_logs_v4',
+  ACCESS_GRANTS: 'srh_3dp_access_grants_v4',
 };
 
 export interface ToastNotification {
@@ -38,17 +40,14 @@ export interface ToastNotification {
 }
 
 export interface CreateRequestPayload {
+  matriculationNumber: string;
   projectTitle: string;
   courseOrDepartment: string;
-  description: string;
-  purpose: string;
   intendedUse: string;
+  contactedApprover: ApprovalContact;
   printerId: string;
   material: SupportedMaterial;
-  estimatedDuration: string;
-  estimatedHoursNumeric: number;
   quantity: number;
-  requestedDateTime?: string;
   attachment: AttachmentMetadata;
   saveAsDraft?: boolean;
   existingDraftId?: string;
@@ -70,6 +69,7 @@ interface AppContextValue {
   accessGrants: AccessGrant[];
   toasts: ToastNotification[];
   loginByEmail: (email: string, password?: string) => ServiceResult<User>;
+  loginWithMicrosoft: (email: string, name: string) => ServiceResult<User>;
   switchRoleUser: (userId: string) => void;
   logout: () => void;
   addToast: (type: ToastNotification['type'], title: string, message: string) => void;
@@ -285,6 +285,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { ok: true, data: matched };
   };
 
+  // Identity already verified by Microsoft Entra ID; unknown accounts join as students
+  const loginWithMicrosoft = (email: string, name: string): ServiceResult<User> => {
+    const trimmed = email.trim().toLowerCase();
+    let matched = users.find((u) => u.email.toLowerCase() === trimmed);
+    if (matched && !matched.active) {
+      return {
+        ok: false,
+        error: 'This account is currently deactivated. Contact the PC Administrator.',
+      };
+    }
+    if (!matched) {
+      matched = {
+        id: `USR-STU-${Date.now()}`,
+        name,
+        email: trimmed,
+        role: 'STUDENT',
+        department: '',
+        active: true,
+        avatarRoleColor: '#1662F3',
+        title: 'Student',
+      };
+      const newUser = matched;
+      setUsers((prev) => [...prev, newUser]);
+    }
+
+    setCurrentUserId(matched.id);
+    addToast('success', 'Signed In', `Welcome, ${matched.name}!`);
+    return { ok: true, data: matched };
+  };
+
   const switchRoleUser = (userId: string) => {
     const target = users.find((u) => u.id === userId);
     if (target) {
@@ -314,6 +344,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `PR-${String(nextNum).padStart(3, '0')}`;
   };
 
+  // Requests live in the student's browser, so this email is how the approver learns of them.
+  // Fire-and-forget: a mail failure must never block the submission itself.
+  const notifyApprover = (req: PrintRequest) => {
+    const to = users.find((u) => u.name === req.contactedApprover)?.email;
+    if (!to) return;
+    const text = [
+      `New 3D print request #${req.id} submitted for your approval.`,
+      '',
+      `1. Full Name: ${req.studentName}`,
+      `2. Matriculation Number: ${req.matriculationNumber || '—'}`,
+      `3. University Mail: ${req.studentEmail}`,
+      `4. Course/Department: ${req.courseOrDepartment}`,
+      `5. Print Item & Quantity: ${req.projectTitle} × ${req.quantity}`,
+      `6. Intended Use: ${req.intendedUse}`,
+      `7. Contacted for approval/support: ${req.contactedApprover}`,
+      `8. 3D Printer: ${req.printerName}`,
+      `9. Filament: ${req.material}`,
+      '',
+      `3D model: ${req.attachment.fileName} (${req.attachment.fileSizeFormatted})`,
+      `Submitted: ${req.submissionDateTimeFormatted}`,
+    ].join('\n');
+    sendMail(to, `3D print request #${req.id}: ${req.projectTitle} (${req.studentName})`, text)
+      .then((sent) => {
+        if (sent) addToast('info', 'Email Sent', `${req.contactedApprover} was notified via Outlook.`);
+      })
+      .catch((err: Error) =>
+        addToast('warning', 'Email Not Sent', `Request saved, but notifying ${req.contactedApprover} failed: ${err.message}`)
+      );
+  };
+
   const createOrSubmitRequest = (
     payload: CreateRequestPayload
   ): ServiceResult<PrintRequest> => {
@@ -329,7 +389,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const printer = printers.find((p) => p.id === payload.printerId);
     if (!printer) {
-      return { ok: false, error: 'Please select a valid FDM printer.' };
+      return { ok: false, error: 'Please select a valid printer.' };
     }
     if (!printer.supportedMaterials.includes(payload.material)) {
       return {
@@ -345,24 +405,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : 'PENDING_PROFESSOR_APPROVAL';
 
     const requestId = payload.existingDraftId || generateNextRequestId();
+    const approver = users.find((u) => u.name === payload.contactedApprover);
+    const approverName = payload.contactedApprover;
 
     const newRequest: PrintRequest = {
       id: requestId,
       studentId: currentUser.id,
       studentName: currentUser.name,
       studentEmail: currentUser.email,
+      matriculationNumber: payload.matriculationNumber.trim(),
       projectTitle: payload.projectTitle.trim(),
       courseOrDepartment: payload.courseOrDepartment.trim(),
-      description: payload.description.trim(),
-      purpose: payload.purpose.trim(),
       intendedUse: payload.intendedUse.trim(),
+      contactedApprover: payload.contactedApprover,
       printerId: printer.id,
       printerName: printer.name,
       material: payload.material,
-      estimatedDuration: payload.estimatedDuration.trim(),
-      estimatedHoursNumeric: payload.estimatedHoursNumeric || 2,
       quantity: payload.quantity,
-      requestedDateTime: payload.requestedDateTime,
       attachment: {
         ...payload.attachment,
         uploadedAt: dateTime,
@@ -371,8 +430,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       submissionDateFormatted: dateShort,
       submissionDateTimeFormatted: dateTime,
       currentStatus: targetStatus,
-      assignedProfessorName: 'Ajinkya Keskar',
-      assignedProfessorId: 'USR-PROF-01',
+      assignedProfessorName: approverName,
+      assignedProfessorId: approver?.id,
     };
 
     setRequests((prev) => {
@@ -392,7 +451,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         printerName: newRequest.printerName,
         printerId: newRequest.printerId,
         material: newRequest.material,
-        professorApprovalSummary: 'Pending Ajinkya Keskar',
+        professorApprovalSummary: `Pending ${approverName}`,
         pcAdminDecisionSummary: 'Awaiting Professor Stage',
         action: 'REQUEST_SUBMITTED',
         actorId: currentUser.id,
@@ -407,8 +466,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addToast(
         'success',
         `Request #${newRequest.id} Submitted`,
-        'Your request has been routed to Ajinkya Keskar for academic approval.'
+        `Your request has been routed to ${approverName} for approval.`
       );
+      notifyApprover(newRequest);
     } else {
       addToast(
         'info',
@@ -457,7 +517,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       printerName: updated.printerName,
       printerId: updated.printerId,
       material: updated.material,
-      professorApprovalSummary: 'Pending Ajinkya Keskar',
+      professorApprovalSummary: `Pending ${updated.assignedProfessorName}`,
       pcAdminDecisionSummary: 'Awaiting Professor Stage',
       action: 'REQUEST_SUBMITTED',
       actorId: currentUser.id,
@@ -474,6 +534,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `Request #${updated.id} Submitted`,
       'Sent to Professor for academic review.'
     );
+    notifyApprover(updated);
     return { ok: true, data: updated };
   };
 
@@ -502,6 +563,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ok: false,
         error: `Out of scope: You are not assigned to review requests for ${req.courseOrDepartment}.`,
+      };
+    }
+
+    if (
+      req.contactedApprover !== currentUser.name
+    ) {
+      return {
+        ok: false,
+        error: `Out of scope: Request #${req.id} was sent to ${req.contactedApprover} for approval.`,
       };
     }
 
@@ -897,6 +967,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         accessGrants,
         toasts,
         loginByEmail,
+        loginWithMicrosoft,
         switchRoleUser,
         logout,
         addToast,

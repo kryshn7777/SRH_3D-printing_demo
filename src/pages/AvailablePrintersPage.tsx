@@ -84,7 +84,7 @@ export const AvailablePrintersPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search printer name, ID (e.g. PR-01, Prusa MK4), or filament..."
+            placeholder="Search printer name, ID (e.g. PR-01, Bambu X1C), or filament..."
             aria-label="Search printers"
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
           />
@@ -122,9 +122,9 @@ export const AvailablePrintersPage: React.FC = () => {
             <option value="PLA">PLA</option>
             <option value="PETG">PETG</option>
             <option value="ABS">ABS</option>
-            <option value="TPU">TPU</option>
             <option value="ASA">ASA</option>
-            <option value="PC">PC</option>
+            <option value="PA6 CF">PA6 CF</option>
+            <option value="TPU">TPU</option>
           </select>
         </div>
       </div>
@@ -304,7 +304,10 @@ export const AvailablePrintersPage: React.FC = () => {
                 <div>
                   <span className="text-slate-500 block">Printer Technology</span>
                   <span className="font-bold text-slate-900 mt-0.5 block">
-                    {selectedPrinter.technology} (Fused Deposition Modeling)
+                    {selectedPrinter.technology}{' '}
+                    {selectedPrinter.technology === 'SLA'
+                      ? '(Stereolithography)'
+                      : '(Fused Deposition Modeling)'}
                   </span>
                 </div>
                 <div>
