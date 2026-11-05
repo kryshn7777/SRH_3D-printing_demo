@@ -107,7 +107,6 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     role === 'PROFESSOR' ||
     lower.includes('ajinkya') ||
     lower.includes('keskar');
-  const isPcAdmin = role === 'PC_ADMIN' || lower.includes('pc admin');
 
   if (isAnna) {
     // Portrait avatar matching Anna Müller in the reference UI
@@ -192,37 +191,6 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             d="M28.5 33.5C30.5 34.5 33.5 34.5 35.5 33.5"
             stroke="#475569"
             strokeWidth="1.6"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  if (isPcAdmin) {
-    // Portrait avatar for PC Admin
-    return (
-      <div
-        className={`${dims} rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0 shadow-2xs`}
-        title={`${name} (${role})`}
-      >
-        <svg viewBox="0 0 64 64" className="w-full h-full">
-          <rect width="64" height="64" fill="#E2E8F0" />
-          <path d="M11 64C11 48 20 43 32 43C44 43 53 48 53 64" fill="#37484E" />
-          <path d="M26 43L32 53L38 43" fill="#CBD5E1" />
-          <rect x="27" y="36" width="10" height="9" rx="3" fill="#E5B596" />
-          <ellipse cx="32" cy="26" rx="11" ry="13" fill="#F0C4A8" />
-          <path
-            d="M21 22C21 13 26 10 32 10C38 10 43 13 43 22C40 17 35 16 32 16C28 16 24 17 21 22Z"
-            fill="#1E293B"
-          />
-          <circle cx="28" cy="26" r="1.4" fill="#0F172A" />
-          <circle cx="36" cy="26" r="1.4" fill="#0F172A" />
-          <path
-            d="M28.5 33C30.5 34.5 33.5 34.5 35.5 33"
-            stroke="#78350F"
-            strokeWidth="1.5"
             strokeLinecap="round"
             fill="none"
           />

@@ -147,7 +147,7 @@ export const PrinterIllustration: React.FC<{
 };
 
 /**
- * Interactive 3D STL / OBJ Mesh Viewer for Student, Professor (Ajinkya Keskar), and PC Admin.
+ * Interactive 3D STL / OBJ Mesh Viewer for Student and Professor (Ajinkya Keskar).
  * Renders real uploaded .STL / .OBJ files from IndexedDB (or real binary STL meshes for seeded requests)
  * with mouse/touch drag-to-orbit, zoom controls, wireframe toggle, and build-plate grid.
  */

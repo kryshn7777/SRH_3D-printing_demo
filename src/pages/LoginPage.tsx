@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
   UserCheck,
-  ShieldCheck,
+  Boxes,
   Eye,
   EyeOff,
   AlertCircle,
@@ -13,33 +13,30 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DEPARTMENTS } from '../data/seedData';
-import { msalConfigured, signInWithMicrosoft } from '../utils/msalAuth';
+import { Role, HOME_ROUTE } from '../types/models';
 
 export const LoginPage: React.FC = () => {
-  const { loginByEmail, loginWithMicrosoft, switchRoleUser, users } = useApp();
+  const { loginByMatriculation, switchRoleUser, users } = useApp();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('anna.mueller@srh-berlin.de');
-  const [password, setPassword] = useState('srh2024');
+  const [matriculationNumber, setMatriculationNumber] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [infoModal, setInfoModal] = useState<
     null | 'programmes' | 'printers' | 'how-it-works' | 'contact'
   >(null);
-  const [ssoOpen, setSsoOpen] = useState(false);
   const [lang, setLang] = useState<'EN' | 'DE'>('EN');
 
-  const routeForRole = (role: string) => {
-    if (role === 'STUDENT') navigate('/student/dashboard');
-    else if (role === 'PROFESSOR') navigate('/professor/dashboard');
-    else navigate('/pc/dashboard');
-  };
+  const routeForRole = (role: Role) => navigate(HOME_ROUTE[role]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const res = loginByEmail(email, password);
+    setBusy(true);
+    const res = await loginByMatriculation(matriculationNumber, password);
+    setBusy(false);
     if (!res.ok || !res.data) {
       setError(res.error || 'Invalid credentials.');
       return;
@@ -47,31 +44,9 @@ export const LoginPage: React.FC = () => {
     routeForRole(res.data.role);
   };
 
-  const handleMicrosoftLogin = async () => {
-    setError(null);
-    if (!msalConfigured) {
-      setSsoOpen(true);
-      return;
-    }
-    try {
-      const { email: msEmail, name } = await signInWithMicrosoft();
-      const res = loginWithMicrosoft(msEmail, name);
-      if (!res.ok || !res.data) {
-        setError(res.error || 'Microsoft sign-in failed.');
-        return;
-      }
-      routeForRole(res.data.role);
-    } catch (err) {
-      if ((err as { errorCode?: string }).errorCode === 'user_cancelled') return;
-      setError(`Microsoft sign-in failed: ${(err as Error).message}`);
-    }
-  };
-
   const handleQuickDemoLogin = (userId: string) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
-    setEmail(user.email);
-    setPassword('srh2024');
     setError(null);
     switchRoleUser(user.id);
     routeForRole(user.role);
@@ -400,7 +375,7 @@ export const LoginPage: React.FC = () => {
               </h1>
 
               <p className="text-[18px] sm:text-[20px] leading-[32px] text-white font-normal max-w-xl drop-shadow-xs">
-                FDM Printer Request, Academic Approval and Lab Access Management System for students, faculty, and laboratory administrators at Campus Berlin.
+                FDM Printer Request, Approval, Lab Access and Inventory Management System for students, faculty, and lab staff at Campus Berlin.
               </p>
             </div>
 
@@ -437,29 +412,29 @@ export const LoginPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <div className="font-srh-headline text-[16px] font-bold text-white">
-                  For Professors
+                  For Approver
                 </div>
                 <div className="text-[13px] text-white/80 mt-0.5">
-                  Review and approve
+                  Approve and grant access
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickDemoLogin('USR-PC-01')}
+                onClick={() => handleQuickDemoLogin('USR-LAB-01')}
                 className="group text-left p-4 rounded-[20px_20px_20px_2px] bg-[#001725]/85 hover:bg-[#D54407] border border-white/20 hover:border-[#D54407] transition-all cursor-pointer backdrop-blur-xs"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white">
-                    <ShieldCheck className="w-5 h-5" />
+                    <Boxes className="w-5 h-5" />
                   </div>
                   <ArrowRight className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <div className="font-srh-headline text-[16px] font-bold text-white">
-                  For PC Admin
+                  For Lab In-Charge
                 </div>
                 <div className="text-[13px] text-white/80 mt-0.5">
-                  Manage and authorize
+                  Update inventory
                 </div>
               </button>
             </div>
@@ -475,7 +450,7 @@ export const LoginPage: React.FC = () => {
                 Login to your Account
               </h2>
               <p className="text-[15px] leading-[22px] text-[#575756] mt-1">
-                Use your SRH credentials to access the system.
+                Log in with your matriculation number and password.
               </p>
             </div>
 
@@ -493,19 +468,20 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="flex flex-col">
                 <label
-                  htmlFor="srh-email-input"
+                  htmlFor="srh-matric-input"
                   className="text-[14px] leading-[20px] text-[#575756] mx-[10px] mb-[5px] inline-flex items-center"
                 >
-                  <span>Email (SRH)</span>
+                  <span>Matriculation Number</span>
                   <span className="text-[#D54407] ml-0.5 font-bold">*</span>
                 </label>
                 <input
-                  id="srh-email-input"
-                  type="email"
+                  id="srh-matric-input"
+                  type="text"
+                  inputMode="numeric"
                   autoComplete="username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@srh-berlin.de"
+                  value={matriculationNumber}
+                  onChange={(e) => setMatriculationNumber(e.target.value)}
+                  placeholder="e.g. 1100421"
                   required
                   className="srh-textinput"
                 />
@@ -543,49 +519,29 @@ export const LoginPage: React.FC = () => {
                     )}
                   </button>
                 </div>
-                <div className="mt-2 flex justify-end px-1">
-                  <button
-                    type="button"
-                    onClick={() => setForgotModalOpen(true)}
-                    className="text-[13px] font-bold text-[#171717] hover:text-[#C12D00] underline underline-offset-2 transition-colors cursor-pointer"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
               </div>
 
               {/* Official SRH .b_button--primary (border-radius: 20px 20px 20px 2px) */}
               <button
                 type="submit"
-                className="srh-btn-primary w-full cursor-pointer mt-1"
+                disabled={busy}
+                className="srh-btn-primary w-full cursor-pointer mt-1 disabled:opacity-60"
               >
-                Login
+                {busy ? 'Checking…' : 'Login'}
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="my-4 flex items-center gap-3">
-              <div className="h-[1px] flex-1 bg-[#DDDAD8]" />
-              <span className="text-[12px] text-[#736E6B] font-normal">or</span>
-              <div className="h-[1px] flex-1 bg-[#DDDAD8]" />
-            </div>
+            <p className="mt-4 text-[14px] text-center">
+              New student?{' '}
+              <Link
+                to="/signup"
+                className="font-bold text-[#171717] hover:text-[#C12D00] underline underline-offset-2"
+              >
+                Create an account
+              </Link>
+            </p>
 
-            {/* Official SRH .b_button--secondary speech-bubble button for Microsoft SSO */}
-            <button
-              type="button"
-              onClick={() => void handleMicrosoftLogin()}
-              className="srh-btn-secondary w-full gap-2.5 cursor-pointer"
-            >
-              <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
-                <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-                <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-                <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-                <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-              </svg>
-              <span>Login with Microsoft (SRH)</span>
-            </button>
-
-            {/* Demonstration Accounts (1-Click Sign In) styled with SRH #F5F4F3 & #DDDAD8 */}
+            {/* Staff & Demo Accounts (1-Click Sign In) styled with SRH #F5F4F3 & #DDDAD8 */}
             <div className="mt-6 pt-4 border-t border-[#DDDAD8]">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="font-srh-headline text-[11px] font-bold uppercase tracking-[0.14em] text-[#575756]">
@@ -619,14 +575,14 @@ export const LoginPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickDemoLogin('USR-PC-01')}
+                  onClick={() => handleQuickDemoLogin('USR-LAB-01')}
                   className="px-3 py-2.5 rounded-[12px_12px_12px_2px] bg-[#F5F4F3] hover:bg-[#D54407] text-[#171717] hover:text-white border border-[#DDDAD8] hover:border-[#D54407] text-left transition-colors group cursor-pointer"
                 >
                   <div className="font-srh-headline text-[13px] font-bold">
-                    PC Admin
+                    Lab
                   </div>
                   <div className="text-[11px] text-[#575756] group-hover:text-white/90 truncate">
-                    PC Admin
+                    Lab In-Charge
                   </div>
                 </button>
               </div>
@@ -668,25 +624,10 @@ export const LoginPage: React.FC = () => {
               className="flex-1 bg-white hover:bg-[#F5F4F3] text-[#575756] py-[20px] px-[30px] border-b lg:border-b-0 lg:border-r border-[#AAA39D] text-left relative group transition-colors cursor-pointer"
             >
               <span className="block text-[12px] font-normal leading-[20px] tracking-[0.3px] text-[#575756]">
-                Step 02 • Academic Review
+                Step 02 • Approval & Lab Access
               </span>
               <span className="block text-[15px] lg:text-[16px] font-bold leading-[28px] tracking-[0.3px] text-[#171717] group-hover:text-[#D54407] transition-colors pr-6">
-                Prof. Ajinkya Keskar — Approve Course Models
-              </span>
-              <Plus className="w-6 h-6 text-[#D54407] absolute right-5 top-1/2 -translate-y-1/2 group-hover:rotate-90 transition-transform" />
-            </button>
-
-            {/* Column 3: PC Admin Portal */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('USR-PC-01')}
-              className="flex-1 bg-white hover:bg-[#F5F4F3] text-[#575756] py-[20px] px-[30px] text-left relative group transition-colors cursor-pointer"
-            >
-              <span className="block text-[12px] font-normal leading-[20px] tracking-[0.3px] text-[#575756]">
-                Step 03 • Lab Authorization
-              </span>
-              <span className="block text-[15px] lg:text-[16px] font-bold leading-[28px] tracking-[0.3px] text-[#171717] group-hover:text-[#D54407] transition-colors pr-6">
-                PC Admin — Assign Printer &amp; Grant Access
+                Prof. Ajinkya Keskar — Approve, Reject &amp; Grant Access
               </span>
               <Plus className="w-6 h-6 text-[#D54407] absolute right-5 top-1/2 -translate-y-1/2 group-hover:rotate-90 transition-transform" />
             </button>
@@ -695,7 +636,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const el = document.getElementById('srh-email-input');
+                const el = document.getElementById('srh-matric-input');
                 el?.focus();
               }}
               className="bg-[#D54407] hover:bg-[#C12D00] text-white font-bold text-[16px] leading-[20px] py-[18px] px-[28px] lg:w-[220px] lg:rounded-[0px_20px_20px_0px] flex items-center justify-center transition-colors cursor-pointer shrink-0"
@@ -725,7 +666,7 @@ export const LoginPage: React.FC = () => {
               Ernst-Reuter-Platz 10, 10587 Berlin
             </div>
             <div>
-              Faculty Supervisor: Prof. Ajinkya Keskar • Lab Operations: PC Admin
+              Faculty Supervisor &amp; Lab Approver: Prof. Ajinkya Keskar
             </div>
           </div>
         </div>
@@ -871,120 +812,8 @@ export const LoginPage: React.FC = () => {
       </footer>
 
       {/* ===================================================================
-          MODALS (Microsoft SSO, Password Recovery, Header Info)
+          MODALS (Header Info)
          =================================================================== */}
-      {ssoOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white text-[#575756] rounded-[20px_20px_20px_0px] max-w-md w-full p-7 shadow-2xl border border-[#DDDAD8]">
-            <div className="flex items-center justify-between pb-3 border-b border-[#DDDAD8]">
-              <div className="flex items-center gap-2.5">
-                <svg width="18" height="18" viewBox="0 0 21 21">
-                  <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-                  <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-                  <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-                  <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-                </svg>
-                <span className="font-srh-headline text-[16px] font-bold text-[#171717]">
-                  Microsoft Entra ID — SRH University
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSsoOpen(false)}
-                className="text-[#575756] hover:text-[#171717] cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-[14px] text-[#575756] mt-3">
-              Real Microsoft sign-in is not configured yet (set VITE_MSAL_CLIENT_ID and
-              VITE_MSAL_TENANT_ID). Select a seeded SRH Berlin campus identity to complete simulated
-              single sign-on:
-            </p>
-            <div className="mt-4 space-y-2.5">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => {
-                    setSsoOpen(false);
-                    handleQuickDemoLogin(u.id);
-                  }}
-                  className="w-full p-3.5 rounded-[14px_14px_14px_2px] border border-[#DDDAD8] hover:border-[#D54407] hover:bg-[#F5F4F3] flex items-center justify-between text-left transition-colors cursor-pointer"
-                >
-                  <div>
-                    <div className="font-srh-headline text-[15px] font-bold text-[#171717]">
-                      {u.name}
-                    </div>
-                    <div className="text-[12px] text-[#575756]">{u.email}</div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded text-[11px] font-bold bg-[#001725] text-white">
-                    {u.role}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {forgotModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white text-[#575756] rounded-[20px_20px_20px_0px] max-w-md w-full p-7 shadow-2xl border border-[#DDDAD8]">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="srh-overline block">mySRH Identity</span>
-                <h3 className="font-srh-headline text-[22px] font-bold text-[#171717]">
-                  SRH Password Recovery (Demo)
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setForgotModalOpen(false)}
-                className="text-[#575756] hover:text-[#171717] cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-[14px] text-[#575756] mt-3 leading-relaxed">
-              In this demonstration environment, any password of 4+ characters (default:{' '}
-              <code className="px-1.5 py-0.5 rounded bg-[#F5F4F3] text-[#171717] font-mono">
-                srh2024
-              </code>
-              ) works with our seeded SRH emails:
-            </p>
-            <ul className="mt-3 space-y-1.5 text-[13px] text-[#171717] bg-[#F5F4F3] p-4 rounded-[12px] border border-[#DDDAD8]">
-              <li>
-                <strong>Student:</strong> anna.mueller@srh-berlin.de
-              </li>
-              <li>
-                <strong>Professor (Ajinkya Keskar):</strong> ajinkya.keskar@srh-berlin.de
-              </li>
-              <li>
-                <strong>PC Admin:</strong> pc.admin@srh-berlin.de
-              </li>
-            </ul>
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setForgotModalOpen(false)}
-                className="srh-btn-primary cursor-pointer"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {infoModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
@@ -1050,10 +879,7 @@ export const LoginPage: React.FC = () => {
                   <strong>Submit Request:</strong> Students upload their binary/ASCII STL, 3MF, or OBJ file and specify their SRH Berlin study programme, printer, and filament.
                 </li>
                 <li>
-                  <strong>Professor Approval:</strong> Faculty (Prof. Ajinkya Keskar) inspect the 3D mesh in the browser, download the STL if needed, and approve academic relevance.
-                </li>
-                <li>
-                  <strong>PC Administrator Final Approval:</strong> PC Admin verifies printer availability, assigns a machine, and grants time-limited access credentials.
+                  <strong>Approval:</strong> Prof. Ajinkya Keskar inspects the 3D mesh in the browser, downloads the STL if needed, and approves or rejects the request. Approval assigns a printer and grants time-limited access credentials.
                 </li>
                 <li>
                   <strong>Printer Access:</strong> Students view their unlocked printer connection details on the Printer Access screen.
@@ -1066,7 +892,6 @@ export const LoginPage: React.FC = () => {
                 <p className="font-bold">SRH Berlin MakerLab &amp; Print Center</p>
                 <p>Ernst-Reuter-Platz 10, 10587 Berlin — Building B, Room 104</p>
                 <p>Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)</p>
-                <p>Print Center Administration: PC Admin (pc.admin@srh-berlin.de)</p>
                 <p>Lab Hours: Mon–Fri, 08:30 – 19:00 CET</p>
               </div>
             )}

@@ -18,16 +18,13 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
   const profApproval = approvals.find(
     (a) => a.requestId === request.id && a.reviewerRole === 'PROFESSOR'
   );
-  const pcApproval = approvals.find(
-    (a) => a.requestId === request.id && a.reviewerRole === 'PC_ADMIN'
-  );
 
   // Stage 1: Request Submitted
   const stage1State: StageState = status === 'DRAFT' ? 'current' : 'completed';
   const stage1Sub =
     status === 'DRAFT' ? 'Draft not submitted' : request.submissionDateTimeFormatted;
 
-  // Stage 2: Professor Approval
+  // Stage 2: Approval by Ajinkya (approval also grants access)
   let stage2State: StageState = 'upcoming';
   let stage2Sub = 'Not yet';
   if (status === 'PENDING_PROFESSOR_APPROVAL' || status === 'SUBMITTED') {
@@ -40,8 +37,6 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
     stage2State = 'rejected';
     stage2Sub = profApproval?.timestampFormatted || 'Rejected';
   } else if (
-    status === 'PENDING_PC_APPROVAL' ||
-    status === 'REJECTED_BY_PC' ||
     status === 'APPROVED_ACCESS_GRANTED' ||
     status === 'ACCESS_REVOKED'
   ) {
@@ -49,32 +44,15 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
     stage2Sub = profApproval?.timestampFormatted || 'Approved';
   }
 
-  // Stage 3: PC Approval
+  // Stage 3: Access Granted
   let stage3State: StageState = 'upcoming';
   let stage3Sub = 'Not yet';
-  if (status === 'PENDING_PC_APPROVAL') {
-    stage3State = 'current';
-    stage3Sub = 'Pending';
-  } else if (status === 'REJECTED_BY_PC') {
-    stage3State = 'rejected';
-    stage3Sub = pcApproval?.timestampFormatted || 'Rejected';
-  } else if (
-    status === 'APPROVED_ACCESS_GRANTED' ||
-    status === 'ACCESS_REVOKED'
-  ) {
-    stage3State = 'completed';
-    stage3Sub = pcApproval?.timestampFormatted || 'Authorized';
-  }
-
-  // Stage 4: Access Granted
-  let stage4State: StageState = 'upcoming';
-  let stage4Sub = 'Not yet';
   if (status === 'APPROVED_ACCESS_GRANTED') {
-    stage4State = 'completed';
-    stage4Sub = 'Access Active';
+    stage3State = 'completed';
+    stage3Sub = 'Access Active';
   } else if (status === 'ACCESS_REVOKED') {
-    stage4State = 'rejected';
-    stage4Sub = 'Access Revoked';
+    stage3State = 'rejected';
+    stage3Sub = 'Access Revoked';
   }
 
   const stages = [
@@ -86,21 +64,15 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
     },
     {
       num: 2,
-      title: 'Professor Approval',
+      title: 'Approval',
       subtitle: stage2Sub,
       state: stage2State,
     },
     {
       num: 3,
-      title: 'PC Approval',
+      title: 'Access Granted',
       subtitle: stage3Sub,
       state: stage3State,
-    },
-    {
-      num: 4,
-      title: 'Access Granted',
-      subtitle: stage4Sub,
-      state: stage4State,
     },
   ];
 
@@ -142,7 +114,7 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
 
   return (
     <div className="w-full py-2">
-      <div className="grid grid-cols-4 relative">
+      <div className="grid grid-cols-3 relative">
         {stages.map((stage, idx) => {
           const nextStage = stages[idx + 1];
           const isLineBlue =

@@ -131,12 +131,11 @@ export const GuidelinesPage: React.FC = () => {
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs space-y-4 text-xs text-slate-700 leading-relaxed">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
           <BookOpen className="w-4 h-4 text-[#1662F3]" />
-          1. Two-Stage Academic &amp; Technical Approval Workflow
+          1. Approval Workflow
         </div>
         <p>
-          Every print job at SRH University of Applied Sciences Berlin requires two approvals before printer credentials are unlocked:
-          First, your course <strong>Professor</strong> reviews academic relevance and geometry feasibility. Second, the{' '}
-          <strong>PC Administrator</strong> verifies machine scheduling, logs the job in the PC Audit Log, and issues time-limited printer backend credentials.
+          Every print job at SRH University of Applied Sciences Berlin needs approval from{' '}
+          <strong>Prof. Ajinkya Keskar</strong> before printer credentials are unlocked. He reviews academic relevance and geometry feasibility, assigns a printer, and issues time-limited printer backend credentials.
         </p>
 
         <div className="flex items-center gap-2 text-sm font-bold text-slate-900 pt-2">
@@ -181,7 +180,7 @@ export const HelpPage: React.FC = () => {
             Why is my Printer Access page locked?
           </div>
           <p className="text-slate-600 leading-relaxed">
-            Printer backend credentials are only generated after both your Professor AND the PC Administrator have approved your request. Check your 4-stage timeline on the Request Details screen.
+            Printer backend credentials are only generated after Prof. Ajinkya Keskar approves your request. Check your timeline on the Request Details screen.
           </p>
         </div>
 
@@ -194,8 +193,6 @@ export const HelpPage: React.FC = () => {
             Location: Building B, Room 104 (Ernst-Reuter-Platz 10, Berlin)
             <br />
             Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)
-            <br />
-            Print Center Administration: PC Admin (pc.admin@srh-berlin.de)
           </p>
         </div>
       </div>

@@ -31,7 +31,6 @@ export const StudentDashboardPage: React.FC = () => {
   const pendingCount = displayList.filter(
     (r) =>
       r.currentStatus === 'PENDING_PROFESSOR_APPROVAL' ||
-      r.currentStatus === 'PENDING_PC_APPROVAL' ||
       r.currentStatus === 'SUBMITTED' ||
       r.currentStatus === 'CHANGES_REQUESTED'
   ).length;
@@ -41,7 +40,6 @@ export const StudentDashboardPage: React.FC = () => {
   const rejectedCount = displayList.filter(
     (r) =>
       r.currentStatus === 'REJECTED_BY_PROFESSOR' ||
-      r.currentStatus === 'REJECTED_BY_PC' ||
       r.currentStatus === 'ACCESS_REVOKED'
   ).length;
 

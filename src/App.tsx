@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AppShell } from './components/AppShell';
 import { LoginPage } from './pages/LoginPage';
+import { SignUpPage } from './pages/SignUpPage';
 import { StudentDashboardPage } from './pages/StudentDashboardPage';
 import { AvailablePrintersPage } from './pages/AvailablePrintersPage';
 import { NewRequestPage } from './pages/NewRequestPage';
@@ -10,9 +11,9 @@ import { MyRequestsPage } from './pages/MyRequestsPage';
 import { StudentRequestDetailsPage } from './pages/StudentRequestDetailsPage';
 import { ProfessorDashboardPage } from './pages/ProfessorDashboardPage';
 import { ProfessorReviewPage } from './pages/ProfessorReviewPage';
-import { PcAdminDashboardPage } from './pages/PcAdminDashboardPage';
-import { PcFinalApprovalPage } from './pages/PcFinalApprovalPage';
-import { PcLogPage } from './pages/PcLogPage';
+import { LabManagementPage } from './pages/LabManagementPage';
+import { AuditLogPage } from './pages/AuditLogPage';
+import { InventoryPage } from './pages/InventoryPage';
 import { PrinterAccessPage } from './pages/PrinterAccessPage';
 import {
   MaterialsPage,
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
 
         {/* Screen 1 — Login Page */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
         {/* Screen 2 — Student Dashboard */}
         <Route
@@ -104,32 +106,32 @@ export const App: React.FC = () => {
           }
         />
 
-        {/* Screen 9 — PC Administrator Dashboard */}
+        {/* Screen 9 — Lab Management (printers + users) */}
         <Route
-          path="/pc/dashboard"
+          path="/manage"
           element={
             <ShellRoute>
-              <PcAdminDashboardPage />
+              <LabManagementPage />
             </ShellRoute>
           }
         />
 
-        {/* Screen 10 — PC Final Approval */}
+        {/* Lab In-Charge — Inventory */}
         <Route
-          path="/pc/requests/:id/review"
+          path="/lab/inventory"
           element={
             <ShellRoute>
-              <PcFinalApprovalPage />
+              <InventoryPage />
             </ShellRoute>
           }
         />
 
-        {/* Screen 11 — PC Log */}
+        {/* Screen 10 — Audit Log */}
         <Route
-          path="/pc/log"
+          path="/professor/log"
           element={
             <ShellRoute>
-              <PcLogPage />
+              <AuditLogPage />
             </ShellRoute>
           }
         />

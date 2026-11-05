@@ -55,7 +55,6 @@ export const ProfessorDashboardPage: React.FC = () => {
 
   const approvedByProfRequests = scopedRequests.filter(
     (r) =>
-      r.currentStatus === 'PENDING_PC_APPROVAL' ||
       r.currentStatus === 'APPROVED_ACCESS_GRANTED' ||
       approvals.some(
         (a) =>

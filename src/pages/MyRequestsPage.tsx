@@ -41,7 +41,6 @@ export const MyRequestsPage: React.FC = () => {
       if (activeTab === 'pending') {
         return (
           req.currentStatus === 'PENDING_PROFESSOR_APPROVAL' ||
-          req.currentStatus === 'PENDING_PC_APPROVAL' ||
           req.currentStatus === 'SUBMITTED' ||
           req.currentStatus === 'CHANGES_REQUESTED'
         );
@@ -52,7 +51,6 @@ export const MyRequestsPage: React.FC = () => {
       if (activeTab === 'rejected') {
         return (
           req.currentStatus === 'REJECTED_BY_PROFESSOR' ||
-          req.currentStatus === 'REJECTED_BY_PC' ||
           req.currentStatus === 'ACCESS_REVOKED'
         );
       }
@@ -82,7 +80,6 @@ export const MyRequestsPage: React.FC = () => {
     pending: myRequests.filter(
       (r) =>
         r.currentStatus === 'PENDING_PROFESSOR_APPROVAL' ||
-        r.currentStatus === 'PENDING_PC_APPROVAL' ||
         r.currentStatus === 'SUBMITTED' ||
         r.currentStatus === 'CHANGES_REQUESTED'
     ).length,
@@ -92,7 +89,6 @@ export const MyRequestsPage: React.FC = () => {
     rejected: myRequests.filter(
       (r) =>
         r.currentStatus === 'REJECTED_BY_PROFESSOR' ||
-        r.currentStatus === 'REJECTED_BY_PC' ||
         r.currentStatus === 'ACCESS_REVOKED'
     ).length,
     draft: myRequests.filter((r) => r.currentStatus === 'DRAFT').length,

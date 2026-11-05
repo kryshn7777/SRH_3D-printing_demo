@@ -13,22 +13,24 @@
 
 ## Architecture Summary
 - **Stack**: React 19, TypeScript, Vite 6, Tailwind CSS v4, React Router v7, Lucide Icons.
-- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v4` in `src/context/AppContext.tsx`.
+- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v6` in `src/context/AppContext.tsx`.
 - **Seeded Demo Identities**:
   - **Student**: `Anna Müller` (`anna.mueller@srh-berlin.de`)
-  - **Professor**: `Ajinkya Keskar` (`ajinkya.keskar@srh-berlin.de`)
-  - **PC Administrator**: `PC Admin` (`pc.admin@srh-berlin.de`)
+  - **Approver**: `Ajinkya Keskar` (`ajinkya.keskar@srh-berlin.de`) — sole approve/reject/revoke authority; also manages printers and users. No PC Admin role.
+  - **Lab In-Charge**: `Lab In-Charge` (`lab.incharge@srh-berlin.de`) — edits the inventory (filament, spare parts) and printers, including maintenance notes + last-maintained date/person (students see these on the printer catalogue). Cannot approve requests.
+  - Seeded staff/students have no password: they sign in via the 1-click demo cards. Self-registered students log in with matriculation number + password (salted PBKDF2 hash, stored in this browser's localStorage only; no backend yet).
 - **Branding**: Official SRH University vector SVG logo (`#D54407` `.logoMain` + `#575756` `.logoMeta` scraped from `https://www.srh-university.de/en/`) and official SRH Berlin study programmes.
-- **12 Implemented Routes**:
-  1. `/login` — Split-screen SRH Berlin login with demo role quick-select.
-  2. `/student/dashboard` — Student KPI summary, recent requests, and available printers.
-  3. `/student/printers` — Searchable and filterable FDM printer catalogue.
-  4. `/student/requests/new` — 3-column request submission form with STL/3MF/OBJ validation.
-  5. `/student/requests` — Student requests table with tabs, search, and sorting.
-  6. `/student/requests/:id` — Student request details with 3D CAD preview and 4-stage approval timeline.
-  7. `/professor/dashboard` — Professor review queue scoped by department.
-  8. `/professor/requests/:id/review` — Professor academic approval, rejection, and change-request screen.
-  9. `/pc/dashboard` — PC Administrator dashboard with waiting queue, printer management, and user management.
-  10. `/pc/requests/:id/review` — PC final authorization screen with printer assignment and confirmation modal.
-  11. `/pc/log` — Searchable audit trail with date/status filters and CSV export.
-  12. `/student/access/:id` — Gated printer access page showing credentials only after `APPROVED_ACCESS_GRANTED`.
+- **13 Implemented Routes**:
+  1. `/login` — Matriculation number + password login for students; 1-click staff/demo accounts below the form.
+  2. `/signup` — Student sign-up: name, SRH email, matriculation number, department, password + repeat.
+  3. `/student/dashboard` — Student KPI summary, recent requests, and available printers.
+  4. `/student/printers` — Searchable and filterable FDM printer catalogue, including maintenance notes and last-maintained date/person.
+  5. `/student/requests/new` — 3-column request submission form with STL/3MF/OBJ validation.
+  6. `/student/requests` — Student requests table with tabs, search, and sorting.
+  7. `/student/requests/:id` — Student request details with 3D CAD preview and 3-stage timeline (Submitted, Approval, Access Granted).
+  8. `/professor/dashboard` — Approver review queue scoped by department.
+  9. `/professor/requests/:id/review` — Approve (assigns printer + grants access), reject, request changes, or revoke access.
+  10. `/manage` — Printer management and maintenance info (approver + lab in-charge); user management (approver only).
+  11. `/professor/log` — Searchable audit trail with date/status filters and CSV export.
+  12. `/lab/inventory` — Inventory (filament, spare parts) with low-stock flags; editable by lab in-charge only.
+  13. `/student/access/:id` — Gated printer access page showing credentials only after `APPROVED_ACCESS_GRANTED`.

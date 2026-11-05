@@ -6,6 +6,7 @@ import {
   Approval,
   PCLogEntry,
   AccessGrant,
+  InventoryItem,
   RequestStatus,
   SupportedMaterial,
   PrinterAvailability,
@@ -19,18 +20,36 @@ import {
   SEED_APPROVALS,
   SEED_PC_LOGS,
   SEED_ACCESS_GRANTS,
+  SEED_INVENTORY,
+  DEPARTMENTS,
 } from '../data/seedData';
-import { sendMail, signOutMicrosoft } from '../utils/msalAuth';
+import { hashPassword, newSalt } from '../utils/passwordHash';
 
 const STORAGE_KEYS = {
-  CURRENT_USER_ID: 'srh_3dp_current_user_id_v4',
-  USERS: 'srh_3dp_users_v4',
-  PRINTERS: 'srh_3dp_printers_v4',
-  REQUESTS: 'srh_3dp_requests_v4',
-  APPROVALS: 'srh_3dp_approvals_v4',
-  PC_LOGS: 'srh_3dp_pc_logs_v4',
-  ACCESS_GRANTS: 'srh_3dp_access_grants_v4',
+  CURRENT_USER_ID: 'srh_3dp_current_user_id_v6',
+  USERS: 'srh_3dp_users_v6',
+  PRINTERS: 'srh_3dp_printers_v6',
+  REQUESTS: 'srh_3dp_requests_v6',
+  APPROVALS: 'srh_3dp_approvals_v6',
+  PC_LOGS: 'srh_3dp_pc_logs_v6',
+  ACCESS_GRANTS: 'srh_3dp_access_grants_v6',
+  INVENTORY: 'srh_3dp_inventory_v6',
+  CREDENTIALS: 'srh_3dp_credentials_v6',
 };
+
+// Student credentials keyed by matriculation number. Only salted hashes are stored.
+type Credentials = Record<string, { userId: string; salt: string; hash: string }>;
+
+const MATRIC_RE = /^\d{6,8}$/;
+const SRH_EMAIL_RE = /@([a-z0-9-]+\.)*(srh-berlin|srh)\.de$/i;
+
+export interface SignUpPayload {
+  name: string;
+  email: string;
+  matriculationNumber: string;
+  department: string;
+  password: string;
+}
 
 export interface ToastNotification {
   id: string;
@@ -67,9 +86,10 @@ interface AppContextValue {
   approvals: Approval[];
   pcLogs: PCLogEntry[];
   accessGrants: AccessGrant[];
+  inventory: InventoryItem[];
   toasts: ToastNotification[];
-  loginByEmail: (email: string, password?: string) => ServiceResult<User>;
-  loginWithMicrosoft: (email: string, name: string) => ServiceResult<User>;
+  signUpStudent: (payload: SignUpPayload) => Promise<ServiceResult<User>>;
+  loginByMatriculation: (matriculationNumber: string, password: string) => Promise<ServiceResult<User>>;
   switchRoleUser: (userId: string) => void;
   logout: () => void;
   addToast: (type: ToastNotification['type'], title: string, message: string) => void;
@@ -79,12 +99,7 @@ interface AppContextValue {
   professorReviewRequest: (
     requestId: string,
     decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED',
-    comments: string
-  ) => ServiceResult<PrintRequest>;
-  pcFinalReviewRequest: (
-    requestId: string,
-    decision: 'APPROVED' | 'REJECTED',
-    notes: string,
+    comments: string,
     assignedPrinterId?: string,
     validUntilFormatted?: string
   ) => ServiceResult<PrintRequest>;
@@ -94,7 +109,16 @@ interface AppContextValue {
     availabilityStatus: PrinterAvailability
   ) => ServiceResult<void>;
   addPrinter: (newPrinter: Omit<Printer, 'id'>) => ServiceResult<Printer>;
+  updatePrinterMaintenance: (
+    printerId: string,
+    info: { notes: string; on: string; by: string }
+  ) => ServiceResult<void>;
   toggleUserActive: (userId: string) => ServiceResult<void>;
+  addInventoryItem: (
+    item: Omit<InventoryItem, 'id' | 'updatedAt' | 'updatedBy'>
+  ) => ServiceResult<InventoryItem>;
+  setInventoryQuantity: (itemId: string, quantity: number) => ServiceResult<void>;
+  removeInventoryItem: (itemId: string) => ServiceResult<void>;
   resetDemoData: () => void;
 }
 
@@ -133,14 +157,12 @@ const VALID_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   DRAFT: ['SUBMITTED', 'PENDING_PROFESSOR_APPROVAL'],
   SUBMITTED: ['PENDING_PROFESSOR_APPROVAL'],
   PENDING_PROFESSOR_APPROVAL: [
-    'PENDING_PC_APPROVAL',
+    'APPROVED_ACCESS_GRANTED',
     'REJECTED_BY_PROFESSOR',
     'CHANGES_REQUESTED',
   ],
   CHANGES_REQUESTED: ['PENDING_PROFESSOR_APPROVAL', 'SUBMITTED'],
   REJECTED_BY_PROFESSOR: [],
-  PENDING_PC_APPROVAL: ['APPROVED_ACCESS_GRANTED', 'REJECTED_BY_PC'],
-  REJECTED_BY_PC: [],
   APPROVED_ACCESS_GRANTED: ['ACCESS_REVOKED'],
   ACCESS_REVOKED: [],
 };
@@ -167,6 +189,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>(() =>
     loadFromStorage(STORAGE_KEYS.ACCESS_GRANTS, SEED_ACCESS_GRANTS)
+  );
+  const [inventory, setInventory] = useState<InventoryItem[]>(() =>
+    loadFromStorage(STORAGE_KEYS.INVENTORY, SEED_INVENTORY)
+  );
+  const [credentials, setCredentials] = useState<Credentials>(() =>
+    loadFromStorage(STORAGE_KEYS.CREDENTIALS, {})
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(() =>
     loadFromStorage<string | null>(STORAGE_KEYS.CURRENT_USER_ID, 'USR-STU-01')
@@ -223,6 +251,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     try {
+      localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory));
+    } catch {
+      // ignore
+    }
+  }, [inventory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CREDENTIALS, JSON.stringify(credentials));
+    } catch {
+      // ignore
+    }
+  }, [credentials]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, JSON.stringify(currentUserId));
     } catch {
       // ignore
@@ -230,13 +274,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [currentUserId]);
 
   const currentUser = users.find((u) => u.id === currentUserId) ?? null;
-
-  // Every identity change except a Microsoft login drops the Microsoft session first,
-  // so password, demo-switch or reset logins can never reach a previous user's Graph token
-  const switchIdentity = (userId: string | null) => {
-    void signOutMicrosoft();
-    setCurrentUserId(userId);
-  };
+  const canManagePrinters =
+    currentUser?.role === 'PROFESSOR' || currentUser?.role === 'LAB_INCHARGE';
 
   const addToast = (
     type: ToastNotification['type'],
@@ -254,79 +293,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const loginByEmail = (email: string, password?: string): ServiceResult<User> => {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) {
-      return { ok: false, error: 'Please enter your SRH Berlin email address.' };
-    }
-    if (!trimmed.endsWith('@srh-berlin.de') && !trimmed.endsWith('@srh.de')) {
+  const loginByMatriculation = async (
+    matriculationNumber: string,
+    password: string
+  ): Promise<ServiceResult<User>> => {
+    const bad = { ok: false, error: 'Matriculation number or password is incorrect.' };
+    const cred = credentials[matriculationNumber.trim()];
+    if (!cred) return bad;
+    if ((await hashPassword(password, cred.salt)) !== cred.hash) return bad;
+    const user = users.find((u) => u.id === cred.userId);
+    if (!user) return bad;
+    if (!user.active) {
       return {
         ok: false,
-        error: 'Please use a valid university email (@srh-berlin.de).',
+        error: 'This account is currently deactivated. Contact Ajinkya Keskar.',
       };
     }
-    if (password !== undefined && password.trim().length < 4) {
-      return {
-        ok: false,
-        error: 'Password must be at least 4 characters.',
-      };
-    }
-
-    const matched = users.find((u) => u.email.toLowerCase() === trimmed);
-    if (!matched) {
-      return {
-        ok: false,
-        error:
-          'No SRH account found for that email. Try anna.mueller@srh-berlin.de, ajinkya.keskar@srh-berlin.de, or pc.admin@srh-berlin.de.',
-      };
-    }
-    if (!matched.active) {
-      return {
-        ok: false,
-        error: 'This account is currently deactivated. Contact the PC Administrator.',
-      };
-    }
-
-    switchIdentity(matched.id);
-    addToast('success', 'Signed In', `Welcome back, ${matched.name}!`);
-    return { ok: true, data: matched };
+    setCurrentUserId(user.id);
+    addToast('success', 'Signed In', `Welcome back, ${user.name}!`);
+    return { ok: true, data: user };
   };
 
-  // Identity already verified by Microsoft Entra ID; unknown accounts join as students
-  const loginWithMicrosoft = (email: string, name: string): ServiceResult<User> => {
-    const trimmed = email.trim().toLowerCase();
-    let matched = users.find((u) => u.email.toLowerCase() === trimmed);
-    if (matched && !matched.active) {
-      void signOutMicrosoft();
-      return {
-        ok: false,
-        error: 'This account is currently deactivated. Contact the PC Administrator.',
-      };
+  const signUpStudent = async (p: SignUpPayload): Promise<ServiceResult<User>> => {
+    const name = p.name.trim();
+    const email = p.email.trim().toLowerCase();
+    const matric = p.matriculationNumber.trim();
+    const fail = (error: string) => ({ ok: false, error });
+    if (!name) return fail('Please enter your full name.');
+    if (!SRH_EMAIL_RE.test(email)) return fail('Please use your SRH university email (@srh-berlin.de).');
+    if (!MATRIC_RE.test(matric)) return fail('Matriculation number must be 6 to 8 digits.');
+    if (!DEPARTMENTS.includes(p.department)) return fail('Please choose your department.');
+    if (p.password.length < 8) return fail('Password must be at least 8 characters.');
+    if (credentials[matric] || users.some((u) => u.matriculationNumber === matric)) {
+      return fail('An account with this matriculation number already exists. Please log in.');
     }
-    if (!matched) {
-      matched = {
-        id: `USR-STU-${Date.now()}`,
-        name,
-        email: trimmed,
-        role: 'STUDENT',
-        department: '',
-        active: true,
-        avatarRoleColor: '#1662F3',
-        title: 'Student',
-      };
-      const newUser = matched;
-      setUsers((prev) => [...prev, newUser]);
+    if (users.some((u) => u.email.toLowerCase() === email)) {
+      return fail('An account with this email already exists.');
     }
 
-    setCurrentUserId(matched.id);
-    addToast('success', 'Signed In', `Welcome, ${matched.name}!`);
-    return { ok: true, data: matched };
+    const salt = newSalt();
+    const hash = await hashPassword(p.password, salt);
+    const user: User = {
+      id: `USR-STU-${Date.now()}`,
+      name,
+      email,
+      role: 'STUDENT',
+      department: p.department,
+      matriculationNumber: matric,
+      active: true,
+      avatarRoleColor: '#1662F3',
+      title: 'Student',
+    };
+    setUsers((prev) => [...prev, user]);
+    setCredentials((prev) => ({ ...prev, [matric]: { userId: user.id, salt, hash } }));
+    setCurrentUserId(user.id);
+    addToast('success', 'Account Created', `Welcome, ${user.name}!`);
+    return { ok: true, data: user };
   };
 
   const switchRoleUser = (userId: string) => {
     const target = users.find((u) => u.id === userId);
     if (target) {
-      switchIdentity(target.id);
+      setCurrentUserId(target.id);
       addToast(
         'info',
         `Switched Demo Role: ${target.role.replace('_', ' ')}`,
@@ -336,7 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
-    switchIdentity(null);
+    setCurrentUserId(null);
     addToast('info', 'Signed Out', 'You have logged out of the SRH 3D Printing System.');
   };
 
@@ -350,36 +378,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 7;
     const nextNum = maxNum + 1;
     return `PR-${String(nextNum).padStart(3, '0')}`;
-  };
-
-  // Requests live in the student's browser, so this email is how the approver learns of them.
-  // Fire-and-forget: a mail failure must never block the submission itself.
-  const notifyApprover = (req: PrintRequest) => {
-    const to = users.find((u) => u.name === req.contactedApprover)?.email;
-    if (!to) return;
-    const text = [
-      `New 3D print request #${req.id} submitted for your approval.`,
-      '',
-      `1. Full Name: ${req.studentName}`,
-      `2. Matriculation Number: ${req.matriculationNumber || '—'}`,
-      `3. University Mail: ${req.studentEmail}`,
-      `4. Course/Department: ${req.courseOrDepartment}`,
-      `5. Print Item & Quantity: ${req.projectTitle} × ${req.quantity}`,
-      `6. Intended Use: ${req.intendedUse}`,
-      `7. Contacted for approval/support: ${req.contactedApprover}`,
-      `8. 3D Printer: ${req.printerName}`,
-      `9. Filament: ${req.material}`,
-      '',
-      `3D model: ${req.attachment.fileName} (${req.attachment.fileSizeFormatted})`,
-      `Submitted: ${req.submissionDateTimeFormatted}`,
-    ].join('\n');
-    sendMail(req.studentEmail, to, `3D print request #${req.id}: ${req.projectTitle} (${req.studentName})`, text)
-      .then((sent) => {
-        if (sent) addToast('info', 'Email Sent', `${req.contactedApprover} was notified via Outlook.`);
-      })
-      .catch((err: Error) =>
-        addToast('warning', 'Email Not Sent', `Request saved, but notifying ${req.contactedApprover} failed: ${err.message}`)
-      );
   };
 
   const createOrSubmitRequest = (
@@ -460,7 +458,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         printerId: newRequest.printerId,
         material: newRequest.material,
         professorApprovalSummary: `Pending ${approverName}`,
-        pcAdminDecisionSummary: 'Awaiting Professor Stage',
+        accessSummary: 'Awaiting decision',
         action: 'REQUEST_SUBMITTED',
         actorId: currentUser.id,
         actorName: currentUser.name,
@@ -476,7 +474,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `Request #${newRequest.id} Submitted`,
         `Your request has been routed to ${approverName} for approval.`
       );
-      notifyApprover(newRequest);
     } else {
       addToast(
         'info',
@@ -526,7 +523,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       printerId: updated.printerId,
       material: updated.material,
       professorApprovalSummary: `Pending ${updated.assignedProfessorName}`,
-      pcAdminDecisionSummary: 'Awaiting Professor Stage',
+      accessSummary: 'Awaiting decision',
       action: 'REQUEST_SUBMITTED',
       actorId: currentUser.id,
       actorName: currentUser.name,
@@ -542,14 +539,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `Request #${updated.id} Submitted`,
       'Sent to Professor for academic review.'
     );
-    notifyApprover(updated);
     return { ok: true, data: updated };
   };
 
   const professorReviewRequest = (
     requestId: string,
     decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED',
-    comments: string
+    comments: string,
+    assignedPrinterId?: string,
+    validUntilFormatted?: string
   ): ServiceResult<PrintRequest> => {
     if (!currentUser || currentUser.role !== 'PROFESSOR') {
       return {
@@ -602,7 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const nextStatus: RequestStatus =
       decision === 'APPROVED'
-        ? 'PENDING_PC_APPROVAL'
+        ? 'APPROVED_ACCESS_GRANTED'
         : decision === 'REJECTED'
         ? 'REJECTED_BY_PROFESSOR'
         : 'CHANGES_REQUESTED';
@@ -631,8 +629,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestampFormatted: dateTime,
     };
 
+    const targetPrinter =
+      printers.find((p) => p.id === (assignedPrinterId || req.printerId)) ??
+      printers.find((p) => p.id === req.printerId)!;
+
     const updatedRequest: PrintRequest = {
       ...req,
+      printerId: targetPrinter.id,
+      printerName: targetPrinter.name,
       currentStatus: nextStatus,
       assignedProfessorId: currentUser.id,
       assignedProfessorName: currentUser.name,
@@ -655,8 +659,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       requestId: req.id,
       studentName: req.studentName,
       projectTitle: req.projectTitle,
-      printerName: req.printerName,
-      printerId: req.printerId,
+      printerName: targetPrinter.name,
+      printerId: targetPrinter.id,
       material: req.material,
       professorApprovalSummary: `${
         decision === 'APPROVED'
@@ -665,8 +669,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? 'Rejected'
           : 'Changes Requested'
       } by ${currentUser.name} (${dateShort})`,
-      pcAdminDecisionSummary:
-        decision === 'APPROVED' ? 'Pending PC Review' : 'Closed at Professor Stage',
+      accessSummary:
+        decision === 'APPROVED'
+          ? `Access granted on ${targetPrinter.name}`
+          : decision === 'REJECTED'
+          ? 'Rejected, no access granted'
+          : 'Returned to student',
       action: logAction,
       actorId: currentUser.id,
       actorName: currentUser.name,
@@ -680,10 +688,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPcLogs((prev) => [logEntry, ...prev]);
 
     if (decision === 'APPROVED') {
+      const cleanId = req.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const expiry = new Date(Date.now() + 7 * 86400000);
+      const grant: AccessGrant = {
+        id: `ACC-${Date.now()}`,
+        requestId: req.id,
+        printerId: targetPrinter.id,
+        printerName: `${targetPrinter.name} (${targetPrinter.id})`,
+        backendUrl: targetPrinter.backendUrl,
+        demoUsername: `student_${cleanId}`,
+        demoTokenMasked: '••••••••••',
+        demoTokenPlain: `SRH-${targetPrinter.id}-${req.id}-DEMO`,
+        grantedBy: currentUser.id,
+        grantedByName: currentUser.name,
+        grantTimestamp: iso,
+        grantTimestampFormatted: dateTime,
+        expiryTimestamp: expiry.toISOString(),
+        expiryTimestampFormatted:
+          validUntilFormatted ||
+          `${expiry.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}, 23:59`,
+      };
+      setAccessGrants((prev) => [grant, ...prev.filter((g) => g.requestId !== req.id)]);
       addToast(
         'success',
-        `Request #${req.id} Approved by Professor`,
-        'Forwarded to PC Administrator queue for final authorization.'
+        `Request #${req.id} Approved`,
+        `Printer access unlocked for ${req.studentName}.`
       );
     } else if (decision === 'REJECTED') {
       addToast(
@@ -702,158 +735,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { ok: true, data: updatedRequest };
   };
 
-  const pcFinalReviewRequest = (
-    requestId: string,
-    decision: 'APPROVED' | 'REJECTED',
-    notes: string,
-    assignedPrinterId?: string,
-    validUntilFormatted?: string
-  ): ServiceResult<PrintRequest> => {
-    if (!currentUser || currentUser.role !== 'PC_ADMIN') {
-      return {
-        ok: false,
-        error: 'Unauthorized: Only a PC Administrator can grant final printer authorization.',
-      };
-    }
-
-    const req = requests.find((r) => r.id === requestId);
-    if (!req) {
-      return { ok: false, error: 'Request not found.' };
-    }
-
-    if (req.currentStatus !== 'PENDING_PC_APPROVAL') {
-      return {
-        ok: false,
-        error: `Cannot perform PC final approval: Request #${req.id} is in state ${req.currentStatus} (must pass Professor approval first and not be already processed).`,
-      };
-    }
-
-    if (decision === 'REJECTED' && !notes.trim()) {
-      return {
-        ok: false,
-        error: 'A log note / rejection reason is required when rejecting a request.',
-      };
-    }
-
-    const nextStatus: RequestStatus =
-      decision === 'APPROVED' ? 'APPROVED_ACCESS_GRANTED' : 'REJECTED_BY_PC';
-
-    if (!canTransition(req.currentStatus, nextStatus)) {
-      return {
-        ok: false,
-        error: `Invalid transition from ${req.currentStatus} to ${nextStatus}.`,
-      };
-    }
-
-    const targetPrinter =
-      printers.find((p) => p.id === (assignedPrinterId || req.printerId)) ||
-      printers.find((p) => p.id === req.printerId)!;
-
-    const { dateShort, dateTime, iso } = formatNowDate();
-    const finalNotes =
-      notes.trim() ||
-      `Authorized on ${targetPrinter.name} (${targetPrinter.id}). Access credentials granted.`;
-
-    const profApproval = approvals.find(
-      (a) => a.requestId === req.id && a.reviewerRole === 'PROFESSOR' && a.decision === 'APPROVED'
-    );
-
-    const approvalEntry: Approval = {
-      id: `APR-${Date.now()}`,
-      requestId: req.id,
-      reviewerId: currentUser.id,
-      reviewerName: currentUser.name,
-      reviewerRole: 'PC_ADMIN',
-      decision,
-      comments: finalNotes,
-      timestamp: iso,
-      timestampFormatted: dateTime,
-    };
-
-    const updatedRequest: PrintRequest = {
-      ...req,
-      printerId: targetPrinter.id,
-      printerName: targetPrinter.name,
-      currentStatus: nextStatus,
-    };
-
-    setApprovals((prev) => [approvalEntry, ...prev]);
-    setRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? updatedRequest : r))
-    );
-
-    const logEntry: PCLogEntry = {
-      id: `LOG-${Date.now()}`,
-      requestId: req.id,
-      studentName: req.studentName,
-      projectTitle: req.projectTitle,
-      printerName: targetPrinter.name,
-      printerId: targetPrinter.id,
-      material: req.material,
-      professorApprovalSummary: profApproval
-        ? `Approved by ${profApproval.reviewerName}`
-        : `Approved by ${req.assignedProfessorName || 'Ajinkya Keskar'}`,
-      pcAdminDecisionSummary:
-        decision === 'APPROVED'
-          ? `Authorized by ${currentUser.name} (${dateShort})`
-          : `Rejected by ${currentUser.name} (${dateShort})`,
-      action: decision === 'APPROVED' ? 'PC_FINAL_APPROVED' : 'PC_FINAL_REJECTED',
-      actorId: currentUser.id,
-      actorName: currentUser.name,
-      actorRole: 'PC_ADMIN',
-      timestamp: iso,
-      timestampFormatted: dateTime,
-      currentStatus: nextStatus,
-      notes: finalNotes,
-    };
-
-    setPcLogs((prev) => [logEntry, ...prev]);
-
-    if (decision === 'APPROVED') {
-      const cleanId = req.id.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const grant: AccessGrant = {
-        id: `ACC-${Date.now()}`,
-        requestId: req.id,
-        printerId: targetPrinter.id,
-        printerName: `${targetPrinter.name} (${targetPrinter.id})`,
-        backendUrl: targetPrinter.backendUrl,
-        demoUsername: `student_${cleanId}`,
-        demoTokenMasked: '••••••••••',
-        demoTokenPlain: `SRH-${targetPrinter.id}-${req.id}-DEMO`,
-        grantedBy: currentUser.id,
-        grantedByName: currentUser.name,
-        grantTimestamp: iso,
-        grantTimestampFormatted: dateTime,
-        expiryTimestamp: new Date(Date.now() + 7 * 86400000).toISOString(),
-        expiryTimestampFormatted: validUntilFormatted || '18 Oct 2024, 23:59',
-      };
-      setAccessGrants((prev) => [
-        grant,
-        ...prev.filter((g) => g.requestId !== req.id),
-      ]);
-
-      addToast(
-        'success',
-        `Access Granted for #${req.id}`,
-        `PC Log entry recorded and printer access unlocked for ${req.studentName}.`
-      );
-    } else {
-      addToast(
-        'warning',
-        `Request #${req.id} Rejected by PC Admin`,
-        'Audit entry recorded in PC Log.'
-      );
-    }
-
-    return { ok: true, data: updatedRequest };
-  };
-
   const revokePrinterAccess = (
     requestId: string,
     reason: string
   ): ServiceResult<void> => {
-    if (!currentUser || currentUser.role !== 'PC_ADMIN') {
-      return { ok: false, error: 'Only PC Administrator can revoke printer access.' };
+    if (!currentUser || currentUser.role !== 'PROFESSOR') {
+      return { ok: false, error: 'Only the approver can revoke printer access.' };
     }
     const req = requests.find((r) => r.id === requestId);
     if (!req || req.currentStatus !== 'APPROVED_ACCESS_GRANTED') {
@@ -887,11 +774,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       printerId: req.printerId,
       material: req.material,
       professorApprovalSummary: `Approved by ${req.assignedProfessorName || 'Ajinkya Keskar'}`,
-      pcAdminDecisionSummary: `Revoked by ${currentUser.name} (${dateShort})`,
+      accessSummary: `Revoked by ${currentUser.name} (${dateShort})`,
       action: 'ACCESS_REVOKED',
       actorId: currentUser.id,
       actorName: currentUser.name,
-      actorRole: 'PC_ADMIN',
+      actorRole: 'PROFESSOR',
       timestamp: iso,
       timestampFormatted: dateTime,
       currentStatus: 'ACCESS_REVOKED',
@@ -911,8 +798,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     printerId: string,
     availabilityStatus: PrinterAvailability
   ): ServiceResult<void> => {
-    if (!currentUser || currentUser.role !== 'PC_ADMIN') {
-      return { ok: false, error: 'Only PC Administrators can update printer status.' };
+    if (!canManagePrinters) {
+      return { ok: false, error: 'Only the approver or lab in-charge can update printer status.' };
     }
     setPrinters((prev) =>
       prev.map((p) => (p.id === printerId ? { ...p, availabilityStatus } : p))
@@ -925,9 +812,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { ok: true };
   };
 
+  const updatePrinterMaintenance = (
+    printerId: string,
+    info: { notes: string; on: string; by: string }
+  ): ServiceResult<void> => {
+    if (!canManagePrinters) {
+      return { ok: false, error: 'Only the approver or lab in-charge can update maintenance info.' };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(info.on)) {
+      return { ok: false, error: 'Please enter the date of the last maintenance.' };
+    }
+    if (info.on > new Date().toLocaleDateString('en-CA')) {
+      return { ok: false, error: 'Maintenance date cannot be in the future.' };
+    }
+    if (!info.by.trim()) {
+      return { ok: false, error: 'Please enter who carried out the maintenance.' };
+    }
+    setPrinters((prev) =>
+      prev.map((p) =>
+        p.id === printerId
+          ? {
+              ...p,
+              maintenanceNotes: info.notes.trim(),
+              lastMaintainedOn: info.on,
+              lastMaintainedBy: info.by.trim(),
+            }
+          : p
+      )
+    );
+    addToast('success', 'Maintenance Recorded', `Printer ${printerId} maintenance info saved.`);
+    return { ok: true };
+  };
+
   const addPrinter = (newPrinter: Omit<Printer, 'id'>): ServiceResult<Printer> => {
-    if (!currentUser || currentUser.role !== 'PC_ADMIN') {
-      return { ok: false, error: 'Only PC Administrators can add printers.' };
+    if (!canManagePrinters) {
+      return { ok: false, error: 'Only the approver or lab in-charge can add printers.' };
     }
     const nextId = `PR-0${printers.length + 1}`;
     const created: Printer = { ...newPrinter, id: nextId };
@@ -937,13 +856,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleUserActive = (userId: string): ServiceResult<void> => {
-    if (!currentUser || currentUser.role !== 'PC_ADMIN') {
-      return { ok: false, error: 'Only PC Administrators can manage user status.' };
+    if (!currentUser || currentUser.role !== 'PROFESSOR') {
+      return { ok: false, error: 'Only the approver can manage user status.' };
+    }
+    if (userId === currentUser.id) {
+      return { ok: false, error: 'You cannot deactivate your own account.' };
     }
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, active: !u.active } : u))
     );
     addToast('info', 'User Updated', 'User account status updated.');
+    return { ok: true };
+  };
+
+  const addInventoryItem = (
+    item: Omit<InventoryItem, 'id' | 'updatedAt' | 'updatedBy'>
+  ): ServiceResult<InventoryItem> => {
+    if (currentUser?.role !== 'LAB_INCHARGE') {
+      return { ok: false, error: 'Only the lab in-charge can edit the inventory.' };
+    }
+    if (!item.name.trim()) {
+      return { ok: false, error: 'Item name is required.' };
+    }
+    if (
+      !Number.isInteger(item.quantity) ||
+      item.quantity < 0 ||
+      !Number.isInteger(item.lowStockThreshold) ||
+      item.lowStockThreshold < 0
+    ) {
+      return { ok: false, error: 'Quantity and low-stock level must be whole numbers, 0 or more.' };
+    }
+    const nextNum =
+      Math.max(0, ...inventory.map((i) => parseInt(i.id.replace('INV-', ''), 10) || 0)) + 1;
+    const created: InventoryItem = {
+      ...item,
+      name: item.name.trim(),
+      id: `INV-${String(nextNum).padStart(3, '0')}`,
+      updatedAt: formatNowDate().dateTime,
+      updatedBy: currentUser.name,
+    };
+    setInventory((prev) => [...prev, created]);
+    addToast('success', 'Inventory Updated', `${created.name} added.`);
+    return { ok: true, data: created };
+  };
+
+  const setInventoryQuantity = (itemId: string, quantity: number): ServiceResult<void> => {
+    if (currentUser?.role !== 'LAB_INCHARGE') {
+      return { ok: false, error: 'Only the lab in-charge can edit the inventory.' };
+    }
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      return { ok: false, error: 'Quantity must be a whole number, 0 or more.' };
+    }
+    const { dateTime } = formatNowDate();
+    setInventory((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? { ...i, quantity, updatedAt: dateTime, updatedBy: currentUser.name }
+          : i
+      )
+    );
+    return { ok: true };
+  };
+
+  const removeInventoryItem = (itemId: string): ServiceResult<void> => {
+    if (currentUser?.role !== 'LAB_INCHARGE') {
+      return { ok: false, error: 'Only the lab in-charge can edit the inventory.' };
+    }
+    setInventory((prev) => prev.filter((i) => i.id !== itemId));
+    addToast('info', 'Inventory Updated', 'Item removed.');
     return { ok: true };
   };
 
@@ -954,7 +934,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setApprovals(SEED_APPROVALS);
     setPcLogs(SEED_PC_LOGS);
     setAccessGrants(SEED_ACCESS_GRANTS);
-    switchIdentity('USR-STU-01');
+    setInventory(SEED_INVENTORY);
+    setCredentials({});
+    setCurrentUserId('USR-STU-01');
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
     addToast(
       'info',
@@ -973,9 +955,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approvals,
         pcLogs,
         accessGrants,
+        inventory,
         toasts,
-        loginByEmail,
-        loginWithMicrosoft,
+        signUpStudent,
+        loginByMatriculation,
         switchRoleUser,
         logout,
         addToast,
@@ -983,11 +966,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOrSubmitRequest,
         submitDraftRequest,
         professorReviewRequest,
-        pcFinalReviewRequest,
         revokePrinterAccess,
         updatePrinterStatus,
         addPrinter,
+        updatePrinterMaintenance,
         toggleUserActive,
+        addInventoryItem,
+        setInventoryQuantity,
+        removeInventoryItem,
         resetDemoData,
       }}
     >

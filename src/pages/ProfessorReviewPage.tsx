@@ -8,10 +8,12 @@ import {
   AlertCircle,
   ShieldAlert,
   RotateCcw,
+  Ban,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CadModelPreview } from '../components/PrinterIllustration';
 import { StatusBadge } from '../components/StatusBadge';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { triggerModelDownload } from '../utils/stlStorageAndParser';
 
 export const ProfessorReviewPage: React.FC = () => {
@@ -21,13 +23,19 @@ export const ProfessorReviewPage: React.FC = () => {
     currentUser,
     requests,
     approvals,
+    printers,
     professorReviewRequest,
+    revokePrinterAccess,
     switchRoleUser,
     addToast,
   } = useApp();
 
   const [comments, setComments] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [printerId, setPrinterId] = useState<string | null>(null);
+  const [validUntil, setValidUntil] = useState('');
+  const [revokeReason, setRevokeReason] = useState('');
+  const [confirmRevokeOpen, setConfirmRevokeOpen] = useState(false);
 
   const request = requests.find(
     (r) => r.id.toLowerCase() === (id || '').toLowerCase()
@@ -54,6 +62,9 @@ export const ProfessorReviewPage: React.FC = () => {
   const isProfessor = currentUser?.role === 'PROFESSOR';
   const canReview =
     isProfessor && request.currentStatus === 'PENDING_PROFESSOR_APPROVAL';
+  const canRevoke =
+    isProfessor && request.currentStatus === 'APPROVED_ACCESS_GRANTED';
+  const assignedPrinterId = printerId ?? request.printerId;
 
   const existingProfReview = approvals.find(
     (a) => a.requestId === request.id && a.reviewerRole === 'PROFESSOR'
@@ -63,9 +74,26 @@ export const ProfessorReviewPage: React.FC = () => {
     decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED'
   ) => {
     setError(null);
-    const res = professorReviewRequest(request.id, decision, comments);
+    const res = professorReviewRequest(
+      request.id,
+      decision,
+      comments,
+      assignedPrinterId,
+      validUntil.trim() || undefined
+    );
     if (!res.ok) {
       setError(res.error || 'Could not record decision.');
+      return;
+    }
+    navigate('/professor/dashboard');
+  };
+
+  const handleRevoke = () => {
+    setConfirmRevokeOpen(false);
+    setError(null);
+    const res = revokePrinterAccess(request.id, revokeReason);
+    if (!res.ok) {
+      setError(res.error || 'Could not revoke access.');
       return;
     }
     navigate('/professor/dashboard');
@@ -100,7 +128,7 @@ export const ProfessorReviewPage: React.FC = () => {
                 {currentUser?.name} — {currentUser?.role})
               </p>
               <p className="text-amber-800 mt-0.5">
-                Students and PC Administrators cannot submit academic professor approvals.
+                Only Ajinkya Keskar can approve or reject print requests.
               </p>
             </div>
           </div>
@@ -269,7 +297,7 @@ export const ProfessorReviewPage: React.FC = () => {
           </div>
 
           <p className="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100">
-            Note: Approving this request forwards it to the PC Administrator queue. It does not directly grant printer access.
+            Note: Approving this request immediately grants the student printer access. Your decision is final.
           </p>
         </section>
 
@@ -321,6 +349,90 @@ export const ProfessorReviewPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* Printer assignment + validity, applied when approving */}
+      {canReview && (
+        <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="prof-printer-assign"
+              className="block text-xs font-semibold text-slate-700 mb-1.5"
+            >
+              Assigned Printer (applied on approval)
+            </label>
+            <select
+              id="prof-printer-assign"
+              value={assignedPrinterId}
+              onChange={(e) => setPrinterId(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+            >
+              {printers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.id}) — {p.availabilityStatus}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="prof-valid-until"
+              className="block text-xs font-semibold text-slate-700 mb-1.5"
+            >
+              Access Valid Until{' '}
+              <span className="font-normal text-slate-500">(optional, default 7 days)</span>
+            </label>
+            <input
+              id="prof-valid-until"
+              type="text"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+              placeholder="e.g. 20 Nov 2026, 23:59"
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Revoke active access */}
+      {canRevoke && (
+        <section className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs space-y-3">
+          <label
+            htmlFor="prof-revoke-reason"
+            className="block text-sm font-bold text-slate-900"
+          >
+            Revoke Printer Access{' '}
+            <span className="text-xs font-normal text-slate-500">(reason required)</span>
+          </label>
+          <textarea
+            id="prof-revoke-reason"
+            rows={3}
+            value={revokeReason}
+            onChange={(e) => setRevokeReason(e.target.value)}
+            placeholder="Why is access being revoked?"
+            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
+          />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setConfirmRevokeOpen(true)}
+              className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              Revoke Printer Access
+            </button>
+          </div>
+        </section>
+      )}
+
+      <ConfirmDialog
+        open={confirmRevokeOpen}
+        title={`Revoke Printer Access for #${request.id}?`}
+        description={`This immediately invalidates ${request.studentName}'s printer login credentials and records an ACCESS_REVOKED event in the audit log.`}
+        confirmLabel="Revoke Access Now"
+        variant="danger"
+        onConfirm={handleRevoke}
+        onCancel={() => setConfirmRevokeOpen(false)}
+      />
 
       {/* Bottom Right Action Buttons matching Screen 8 */}
       <div className="flex flex-wrap items-center justify-end gap-3 pt-1">

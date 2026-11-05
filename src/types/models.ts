@@ -1,4 +1,11 @@
-export type Role = 'STUDENT' | 'PROFESSOR' | 'PC_ADMIN' | 'SYSTEM_ADMIN';
+export type Role = 'STUDENT' | 'PROFESSOR' | 'LAB_INCHARGE';
+
+// Landing page per role (single source for login, logo click and role switch)
+export const HOME_ROUTE: Record<Role, string> = {
+  STUDENT: '/student/dashboard',
+  PROFESSOR: '/professor/dashboard',
+  LAB_INCHARGE: '/lab/inventory',
+};
 
 export type RequestStatus =
   | 'DRAFT'
@@ -6,8 +13,6 @@ export type RequestStatus =
   | 'PENDING_PROFESSOR_APPROVAL'
   | 'CHANGES_REQUESTED'
   | 'REJECTED_BY_PROFESSOR'
-  | 'PENDING_PC_APPROVAL'
-  | 'REJECTED_BY_PC'
   | 'APPROVED_ACCESS_GRANTED'
   | 'ACCESS_REVOKED';
 
@@ -28,6 +33,7 @@ export interface User {
   role: Role;
   department: string;
   active: boolean;
+  matriculationNumber?: string; // students only
   avatarRoleColor: string;
   assignedDepartments?: string[]; // Scope for PROFESSOR role
   title?: string;
@@ -43,6 +49,9 @@ export interface Printer {
   availabilityStatus: PrinterAvailability;
   backendUrl: string; // Demo placeholder URL e.g. 'http://192.168.1.21'
   usageRestrictions: string[];
+  maintenanceNotes?: string;
+  lastMaintainedOn?: string; // YYYY-MM-DD
+  lastMaintainedBy?: string;
   nozzleDiameter: string;
   layerResolution: string;
   location: string;
@@ -108,8 +117,6 @@ export type PCLogAction =
   | 'PROFESSOR_APPROVED'
   | 'PROFESSOR_REJECTED'
   | 'PROFESSOR_REQUESTED_CHANGES'
-  | 'PC_FINAL_APPROVED'
-  | 'PC_FINAL_REJECTED'
   | 'PRINTER_REASSIGNED'
   | 'ACCESS_REVOKED';
 
@@ -122,7 +129,7 @@ export interface PCLogEntry {
   printerId: string;
   material: SupportedMaterial;
   professorApprovalSummary: string;
-  pcAdminDecisionSummary: string;
+  accessSummary: string;
   action: PCLogAction;
   actorId: string;
   actorName: string;
@@ -150,4 +157,18 @@ export interface AccessGrant {
   expiryTimestampFormatted: string; // e.g. '18 Oct 2024, 23:59'
   revokedTimestamp?: string;
   revokedReason?: string;
+}
+
+export type InventoryCategory = 'FILAMENT' | 'SPARE_PART';
+
+export interface InventoryItem {
+  id: string;
+  category: InventoryCategory;
+  name: string;
+  material?: SupportedMaterial; // filament only
+  quantity: number;
+  unit: string; // 'spools' | 'pcs'
+  lowStockThreshold: number;
+  updatedAt: string;
+  updatedBy: string;
 }

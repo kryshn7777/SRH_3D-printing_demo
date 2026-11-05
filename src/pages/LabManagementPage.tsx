@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search,
-  Clock,
-  CheckCircle2,
   ClipboardList,
   Printer as PrinterIcon,
   Users,
@@ -11,34 +8,37 @@ import {
   Plus,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { StatusBadge, PrinterAvailabilityBadge } from '../components/StatusBadge';
+import { PrinterAvailabilityBadge } from '../components/StatusBadge';
 import { PrinterIllustration } from '../components/PrinterIllustration';
-import { PrinterAvailability, SupportedMaterial } from '../types/models';
+import { MaintenanceInfo } from '../components/MaintenanceInfo';
+import { Printer, PrinterAvailability, SupportedMaterial } from '../types/models';
 
-type PcTab = 'waiting' | 'approved' | 'logs';
-type PcSection = 'requests' | 'printers' | 'users';
+type LabSection = 'printers' | 'users';
 
-export const PcAdminDashboardPage: React.FC = () => {
+export const LabManagementPage: React.FC = () => {
   const {
     currentUser,
-    requests,
     pcLogs,
     printers,
     users,
     updatePrinterStatus,
     addPrinter,
+    updatePrinterMaintenance,
     toggleUserActive,
     switchRoleUser,
   } = useApp();
   const navigate = useNavigate();
+  const isApprover = currentUser?.role === 'PROFESSOR';
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabParam = (searchParams.get('tab') as PcTab) || 'waiting';
-  const sectionParam = (searchParams.get('section') as PcSection) || 'requests';
-
-  const [activeTab, setActiveTab] = useState<PcTab>(tabParam);
-  const [activeSection, setActiveSection] = useState<PcSection>(sectionParam);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSection, setActiveSection] = useState<LabSection>(
+    searchParams.get('section') === 'users' ? 'users' : 'printers'
+  );
+  const [maintPrinter, setMaintPrinter] = useState<Printer | null>(null);
+  const [maintOn, setMaintOn] = useState('');
+  const [maintBy, setMaintBy] = useState('');
+  const [maintNotes, setMaintNotes] = useState('');
+  const [maintError, setMaintError] = useState<string | null>(null);
   const [newPrinterModal, setNewPrinterModal] = useState(false);
   const [newPrinterName, setNewPrinterName] = useState('');
   const [newPrinterModel, setNewPrinterModel] = useState('');
@@ -46,39 +46,31 @@ export const PcAdminDashboardPage: React.FC = () => {
   const [newPrinterUrl, setNewPrinterUrl] = useState('http://192.168.1.40');
 
   useEffect(() => {
-    const s = searchParams.get('section') as PcSection;
-    if (s === 'printers' || s === 'users') {
-      setActiveSection(s);
-    } else {
-      setActiveSection('requests');
-    }
-    const t = searchParams.get('tab') as PcTab;
-    if (t === 'waiting' || t === 'approved' || t === 'logs') {
-      setActiveTab(t);
-    }
+    setActiveSection(searchParams.get('section') === 'users' ? 'users' : 'printers');
   }, [searchParams]);
 
-  // Distinguish professor-approved requests (PENDING_PC_APPROVAL) from final authorized requests (APPROVED_ACCESS_GRANTED)
-  const waitingForPcRequests = requests.filter(
-    (r) => r.currentStatus === 'PENDING_PC_APPROVAL'
-  );
-  const finalAuthorizedRequests = requests.filter(
-    (r) => r.currentStatus === 'APPROVED_ACCESS_GRANTED'
-  );
+  const openMaintenance = (p: Printer) => {
+    setMaintPrinter(p);
+    setMaintOn(p.lastMaintainedOn || new Date().toLocaleDateString('en-CA'));
+    setMaintBy(p.lastMaintainedBy || currentUser?.name || '');
+    setMaintNotes(p.maintenanceNotes || '');
+    setMaintError(null);
+  };
 
-  const displayedRequests =
-    activeTab === 'waiting' ? waitingForPcRequests : finalAuthorizedRequests;
-
-  const filteredRequests = displayedRequests.filter((req) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      req.id.toLowerCase().includes(q) ||
-      req.studentName.toLowerCase().includes(q) ||
-      req.projectTitle.toLowerCase().includes(q) ||
-      (req.assignedProfessorName || '').toLowerCase().includes(q)
-    );
-  });
+  const handleMaintenanceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!maintPrinter) return;
+    const res = updatePrinterMaintenance(maintPrinter.id, {
+      on: maintOn,
+      by: maintBy,
+      notes: maintNotes,
+    });
+    if (!res.ok) {
+      setMaintError(res.error || 'Could not save maintenance info.');
+      return;
+    }
+    setMaintPrinter(null);
+  };
 
   const handleAddPrinterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,25 +96,25 @@ export const PcAdminDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Role Warning Banner if viewing as non-PC Admin */}
-      {currentUser?.role !== 'PC_ADMIN' && (
+      {/* Role Warning Banner if viewing as non-approver */}
+      {currentUser?.role === 'STUDENT' && (
         <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
-              You are viewing the PC Admin Dashboard while signed in as{' '}
+              You are viewing Lab Management while signed in as{' '}
               <strong>
                 {currentUser?.name} ({currentUser?.role})
               </strong>
-              . Switch to PC Admin role to grant final printer authorization.
+              . Switch to Ajinkya Keskar or the Lab In-Charge to manage printers.
             </span>
           </div>
           <button
             type="button"
-            onClick={() => switchRoleUser('USR-PC-01')}
+            onClick={() => switchRoleUser('USR-PROF-01')}
             className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
           >
-            Switch to PC Admin
+            Switch to Ajinkya Keskar
           </button>
         </div>
       )}
@@ -131,30 +123,14 @@ export const PcAdminDashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            PC Admin Dashboard
+            Lab Management
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Verify approved requests and grant final authorization.
+            Manage printers. The approver also manages user accounts.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSection('requests');
-              setSearchParams({});
-            }}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeSection === 'requests'
-                ? 'bg-[#1662F3] text-white shadow-2xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            PC Approvals ({waitingForPcRequests.length})
-          </button>
-
           <button
             type="button"
             onClick={() => {
@@ -171,6 +147,8 @@ export const PcAdminDashboardPage: React.FC = () => {
             Printer Management ({printers.length})
           </button>
 
+          {isApprover && (
+            <>
           <button
             type="button"
             onClick={() => {
@@ -189,187 +167,16 @@ export const PcAdminDashboardPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => navigate('/pc/log')}
+            onClick={() => navigate('/professor/log')}
             className="px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <ClipboardList className="w-3.5 h-3.5 text-[#1662F3]" />
-            Full PC Log ({pcLogs.length})
+            Audit Log ({pcLogs.length})
           </button>
+            </>
+          )}
         </div>
       </div>
-
-      {/* SECTION 1: PC APPROVALS QUEUE matching Screen 9 */}
-      {activeSection === 'requests' && (
-        <>
-          {/* KPI Summary Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200/90 p-4 flex items-center gap-4 shadow-2xs">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl font-bold text-slate-900 leading-none">
-                  {waitingForPcRequests.length}
-                </div>
-                <div className="text-xs font-medium text-slate-500 mt-1">
-                  Professor-Approved (Awaiting PC)
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200/90 p-4 flex items-center gap-4 shadow-2xs">
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl font-bold text-slate-900 leading-none">
-                  {finalAuthorizedRequests.length}
-                </div>
-                <div className="text-xs font-medium text-slate-500 mt-1">
-                  Final Access Authorized
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200/90 p-4 flex items-center gap-4 shadow-2xs">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#1662F3] flex items-center justify-center shrink-0">
-                <ClipboardList className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl font-bold text-slate-900 leading-none">
-                  {pcLogs.length}
-                </div>
-                <div className="text-xs font-medium text-slate-500 mt-1">
-                  Auditable PC Log Events
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            {/* Underline Tabs matching Screen 9: Waiting for PC Approval (2) | Approved | Logs */}
-            <div className="px-5 pt-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-6 -mb-[1px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('waiting');
-                    setSearchParams({ tab: 'waiting' });
-                  }}
-                  className={`pb-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-                    activeTab === 'waiting'
-                      ? 'border-[#1662F3] text-[#1662F3]'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Waiting for PC Approval ({waitingForPcRequests.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('approved');
-                    setSearchParams({ tab: 'approved' });
-                  }}
-                  className={`pb-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-                    activeTab === 'approved'
-                      ? 'border-[#1662F3] text-[#1662F3]'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Approved ({finalAuthorizedRequests.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/pc/log')}
-                  className="pb-3 text-xs font-bold border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                >
-                  Logs
-                </button>
-              </div>
-
-              <div className="pb-2.5 relative sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search ID, student, professor..."
-                  aria-label="Search PC approval requests"
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
-                />
-              </div>
-            </div>
-
-            {/* Table matching Screen 9 columns: #, Student, Print Item, Professor, Submitted, Action */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50/50 text-xs font-bold text-slate-700">
-                    <th className="py-3.5 pl-5 pr-3">#</th>
-                    <th className="py-3.5 px-3">Student</th>
-                    <th className="py-3.5 px-3">Print Item</th>
-                    <th className="py-3.5 px-3">Professor</th>
-                    <th className="py-3.5 px-3">Submitted</th>
-                    <th className="py-3.5 pl-3 pr-5 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/60 text-[13px]">
-                  {filteredRequests.map((req) => (
-                    <tr
-                      key={req.id}
-                      className="hover:bg-slate-50/90 transition-colors"
-                    >
-                      <td className="py-3.5 pl-5 pr-3 font-semibold text-slate-800 whitespace-nowrap">
-                        {req.id}
-                      </td>
-                      <td className="py-3.5 px-3 font-medium text-slate-900 whitespace-nowrap">
-                        {req.studentName}
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-800">
-                        <div className="font-medium">{req.projectTitle}</div>
-                        <div className="text-[11px] text-slate-500">
-                          {req.printerName} • {req.material}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-700 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          {req.assignedProfessorName || 'Ajinkya Keskar'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-600 whitespace-nowrap">
-                        {req.submissionDateFormatted}
-                      </td>
-                      <td className="py-3.5 pl-3 pr-5 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/pc/requests/${req.id}/review`)
-                          }
-                          className="px-4 py-1.5 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                        >
-                          Review
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {filteredRequests.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-10 text-center text-sm text-slate-500"
-                      >
-                        No requests in this queue.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* SECTION 2: PRINTER MANAGEMENT */}
       {activeSection === 'printers' && (
@@ -397,7 +204,7 @@ export const PcAdminDashboardPage: React.FC = () => {
             {printers.map((p) => (
               <div
                 key={p.id}
-                className="p-4 rounded-xl border border-slate-200 flex items-center justify-between gap-4"
+                className="p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3.5">
                   <PrinterIllustration
@@ -440,6 +247,19 @@ export const PcAdminDashboardPage: React.FC = () => {
                     <option value="Maintenance">Set Maintenance</option>
                   </select>
                 </div>
+
+                <div className="basis-full pt-3 border-t border-slate-100 flex items-start justify-between gap-3">
+                  <MaintenanceInfo printer={p} />
+                  {currentUser?.role !== 'STUDENT' && (
+                    <button
+                      type="button"
+                      onClick={() => openMaintenance(p)}
+                      className="shrink-0 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+                    >
+                      Edit maintenance
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -447,14 +267,14 @@ export const PcAdminDashboardPage: React.FC = () => {
       )}
 
       {/* SECTION 3: USER MANAGEMENT */}
-      {activeSection === 'users' && (
+      {activeSection === 'users' && isApprover && (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
           <div className="p-5 border-b border-slate-200">
             <h2 className="text-base font-bold text-slate-900">
               University Users &amp; Role Scope
             </h2>
             <p className="text-xs text-slate-500">
-              Manage active status for SRH Berlin Students, Professors, and PC Administrators.
+              Manage active status for SRH Berlin students and the approver.
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -507,6 +327,77 @@ export const PcAdminDashboardPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Maintenance Modal */}
+      {maintPrinter && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <form
+            onSubmit={handleMaintenanceSubmit}
+            className="bg-white rounded-xl border border-slate-200 p-6 max-w-md w-full space-y-4 shadow-xl"
+          >
+            <h3 className="text-base font-bold text-slate-900">
+              Maintenance — {maintPrinter.name}
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-xs font-semibold text-slate-700">
+                Last maintained on
+                <input
+                  type="date"
+                  required
+                  value={maintOn}
+                  max={new Date().toLocaleDateString('en-CA')}
+                  onChange={(e) => setMaintOn(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-slate-700">
+                Maintained by
+                <input
+                  type="text"
+                  required
+                  value={maintBy}
+                  onChange={(e) => setMaintBy(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                />
+              </label>
+            </div>
+            <label className="block text-xs font-semibold text-slate-700">
+              Maintenance notes <span className="font-normal text-slate-500">(visible to students)</span>
+              <textarea
+                rows={4}
+                value={maintNotes}
+                onChange={(e) => setMaintNotes(e.target.value)}
+                placeholder="What was done, what to watch for, next service due..."
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+              />
+            </label>
+            {maintError && (
+              <p role="alert" className="text-xs font-medium text-red-700">
+                {maintError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setMaintPrinter(null)}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-[#1662F3] text-white text-xs font-semibold cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -12,6 +12,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { MaintenanceInfo } from '../components/MaintenanceInfo';
 import { Printer, PrinterAvailability, SupportedMaterial } from '../types/models';
 import { PrinterIllustration } from '../components/PrinterIllustration';
 import { PrinterAvailabilityBadge } from '../components/StatusBadge';
@@ -342,10 +343,15 @@ export const AvailablePrintersPage: React.FC = () => {
                 </ul>
               </div>
 
+              <div>
+                <h4 className="font-bold text-slate-900 mb-1.5">Maintenance</h4>
+                <MaintenanceInfo printer={selectedPrinter} />
+              </div>
+
               <div className="p-3 rounded-lg bg-blue-50/70 border border-blue-200/70 flex items-start gap-2 text-slate-700">
                 <Info className="w-4 h-4 text-[#1662F3] shrink-0 mt-0.5" />
                 <span>
-                  Network Backend URL ({selectedPrinter.backendUrl}) and login tokens are unlocked automatically once your request passes both Professor and PC Administrator approval stages.
+                  Network Backend URL ({selectedPrinter.backendUrl}) and login tokens are unlocked automatically once Prof. Ajinkya Keskar approves your request.
                 </span>
               </div>
             </div>

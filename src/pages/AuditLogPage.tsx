@@ -13,7 +13,7 @@ import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { RequestStatus } from '../types/models';
 
-export const PcLogPage: React.FC = () => {
+export const AuditLogPage: React.FC = () => {
   const { pcLogs, requests, currentUser, revokePrinterAccess } = useApp();
   const navigate = useNavigate();
 
@@ -62,7 +62,7 @@ export const PcLogPage: React.FC = () => {
       'Printer',
       'Material',
       'Professor Approval',
-      'PC Admin Decision',
+      'Access Decision',
       'Timestamp',
       'Current Status',
       'Notes',
@@ -75,7 +75,7 @@ export const PcLogPage: React.FC = () => {
       `"${l.printerName}"`,
       l.material,
       `"${l.professorApprovalSummary}"`,
-      `"${l.pcAdminDecisionSummary}"`,
+      `"${l.accessSummary}"`,
       `"${l.timestampFormatted}"`,
       l.currentStatus,
       `"${l.notes.replace(/"/g, '""')}"`,
@@ -86,7 +86,7 @@ export const PcLogPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `srh-berlin-pc-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `srh-berlin-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -97,10 +97,10 @@ export const PcLogPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            PC Log &amp; Audit Trail
+            Audit Log
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Complete searchable record of submissions, professor reviews, PC final authorizations, and access revocations.
+            Complete searchable record of submissions, approvals, rejections, and access revocations.
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export const PcLogPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Request ID (#PR-003), student, project, printer, or reviewer..."
-            aria-label="Search PC log"
+            aria-label="Search audit log"
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
           />
         </div>
@@ -150,10 +150,8 @@ export const PcLogPage: React.FC = () => {
           >
             <option value="ALL">All Statuses</option>
             <option value="APPROVED_ACCESS_GRANTED">Approved (Access Granted)</option>
-            <option value="PENDING_PC_APPROVAL">Waiting for PC Approval</option>
-            <option value="PENDING_PROFESSOR_APPROVAL">Pending Professor</option>
-            <option value="REJECTED_BY_PROFESSOR">Rejected by Professor</option>
-            <option value="REJECTED_BY_PC">Rejected by PC Admin</option>
+            <option value="PENDING_PROFESSOR_APPROVAL">Pending Approval</option>
+            <option value="REJECTED_BY_PROFESSOR">Rejected</option>
             <option value="ACCESS_REVOKED">Access Revoked</option>
           </select>
 
@@ -173,7 +171,7 @@ export const PcLogPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Full-Width Audit Table + Selected PC Log Entry Detail Card */}
+      {/* Full-Width Audit Table + Selected Audit Entry Detail Card */}
       <div className="space-y-5">
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
@@ -185,8 +183,8 @@ export const PcLogPage: React.FC = () => {
                   <th className="py-3.5 px-2.5">Print Item</th>
                   <th className="py-3.5 px-2.5">Printer</th>
                   <th className="py-3.5 px-2.5">Material</th>
-                  <th className="py-3.5 px-2.5">Professor Approval</th>
-                  <th className="py-3.5 px-2.5">PC Decision</th>
+                  <th className="py-3.5 px-2.5">Approval</th>
+                  <th className="py-3.5 px-2.5">Access</th>
                   <th className="py-3.5 px-2.5">Timestamp</th>
                   <th className="py-3.5 px-2.5">Status</th>
                   <th className="py-3.5 pl-2 pr-4 text-right">Action</th>
@@ -224,7 +222,7 @@ export const PcLogPage: React.FC = () => {
                         {entry.professorApprovalSummary}
                       </td>
                       <td className="py-3.5 px-2.5 text-slate-700 font-medium">
-                        {entry.pcAdminDecisionSummary}
+                        {entry.accessSummary}
                       </td>
                       <td className="py-3.5 px-2.5 text-slate-500 whitespace-nowrap">
                         {entry.timestampFormatted}
@@ -237,7 +235,7 @@ export const PcLogPage: React.FC = () => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/pc/requests/${entry.requestId}/review`);
+                            navigate(`/professor/requests/${entry.requestId}/review`);
                           }}
                           className="px-2.5 py-1 rounded bg-[#EBF2FF] hover:bg-blue-100 text-[#1662F3] font-semibold inline-flex items-center gap-1 cursor-pointer"
                         >
@@ -255,7 +253,7 @@ export const PcLogPage: React.FC = () => {
                       colSpan={10}
                       className="py-10 text-center text-sm text-slate-500"
                     >
-                      No PC log records match your current filters.
+                      No audit records match your current filters.
                     </td>
                   </tr>
                 )}
@@ -264,12 +262,12 @@ export const PcLogPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Selected PC Log Entry Detail Card */}
+        {/* Selected Audit Entry Detail Card */}
         <div className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#1662F3]" />
-              PC Log Entry
+              Audit Log Entry
             </h2>
             {selectedLog && (
               <span className="font-mono text-[11px] font-semibold text-slate-500">
@@ -349,14 +347,14 @@ export const PcLogPage: React.FC = () => {
                   Student Detail View
                 </button>
 
-                {currentUser?.role === 'PC_ADMIN' &&
+                {currentUser?.role === 'PROFESSOR' &&
                   selectedRequest?.currentStatus === 'APPROVED_ACCESS_GRANTED' && (
                     <button
                       type="button"
                       onClick={() =>
                         revokePrinterAccess(
                           selectedRequest.id,
-                          'Revoked from PC Log audit view by PC Administrator.'
+                          'Revoked from audit log view by approver.'
                         )
                       }
                       className="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
@@ -369,18 +367,18 @@ export const PcLogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(`/pc/requests/${selectedLog.requestId}/review`)
+                    navigate(`/professor/requests/${selectedLog.requestId}/review`)
                   }
                   className="px-3.5 py-2 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] text-white font-semibold text-xs cursor-pointer"
                 >
-                  Open PC Review
+                  Open Review
                 </button>
               </div>
             </div>
           ) : (
             <div className="py-8 text-center text-xs text-slate-400">
               <FileSpreadsheet className="w-6 h-6 mx-auto mb-1.5 text-slate-300" />
-              Select any row in the PC Log table to inspect full audit details.
+              Select any row in the audit table to inspect full audit details.
             </div>
           )}
         </div>

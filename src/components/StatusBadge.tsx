@@ -21,13 +21,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     case 'SUBMITTED':
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200/70">
-          {compact ? 'Pending' : 'Pending Professor Approval'}
-        </span>
-      );
-    case 'PENDING_PC_APPROVAL':
-      return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200/80">
-          {compact ? 'Pending' : 'Waiting for PC Approval'}
+          {compact ? 'Pending' : 'Pending Approval'}
         </span>
       );
     case 'CHANGES_REQUESTED':
@@ -37,10 +31,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         </span>
       );
     case 'REJECTED_BY_PROFESSOR':
-    case 'REJECTED_BY_PC':
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-700 border border-red-200/70">
-          {compact ? 'Rejected' : status === 'REJECTED_BY_PC' ? 'Rejected by PC Admin' : 'Rejected'}
+          Rejected
         </span>
       );
     case 'ACCESS_REVOKED':

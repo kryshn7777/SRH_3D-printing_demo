@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
+  Boxes,
   PlusSquare,
   FileText,
   Printer,
@@ -25,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SrhLogo, UserAvatar } from './SrhLogo';
-import { Role } from '../types/models';
+import { Role, HOME_ROUTE } from '../types/models';
 
 interface NavItem {
   label: string;
@@ -82,40 +83,28 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
         { label: 'Help', to: '/student/help', icon: HelpCircle },
       ];
     }
-    if (role === 'PROFESSOR') {
+    if (role === 'LAB_INCHARGE') {
       return [
-        { label: 'Dashboard', to: '/professor/dashboard', icon: Home },
-        {
-          label: 'Approval Requests',
-          to: '/professor/dashboard?tab=pending',
-          icon: CheckSquare,
-        },
-        {
-          label: 'My Approvals',
-          to: '/professor/dashboard?tab=approved',
-          icon: FileText,
-        },
-        { label: 'Printer Overview', to: '/student/printers', icon: Printer },
-        { label: 'Users', to: '/pc/dashboard?section=users', icon: Users },
-        { label: 'Reports', to: '/pc/log', icon: BarChart3 },
+        { label: 'Inventory', to: '/lab/inventory', icon: Boxes },
+        { label: 'Printers', to: '/manage?section=printers', icon: Printer },
       ];
     }
-    // PC_ADMIN or SYSTEM_ADMIN
     return [
-      { label: 'Dashboard', to: '/pc/dashboard', icon: Home },
+      { label: 'Dashboard', to: '/professor/dashboard', icon: Home },
       {
-        label: 'PC Approvals',
-        to: '/pc/dashboard?tab=waiting',
+        label: 'Approval Requests',
+        to: '/professor/dashboard?tab=pending',
         icon: CheckSquare,
       },
-      { label: 'PC Log', to: '/pc/log', icon: ClipboardList },
       {
-        label: 'Printer Management',
-        to: '/pc/dashboard?section=printers',
-        icon: Printer,
+        label: 'My Approvals',
+        to: '/professor/dashboard?tab=approved',
+        icon: FileText,
       },
-      { label: 'Users', to: '/pc/dashboard?section=users', icon: Users },
-      { label: 'Reports', to: '/pc/log?view=reports', icon: BarChart3 },
+      { label: 'Printer Overview', to: '/student/printers', icon: Printer },
+      { label: 'Printer Management', to: '/manage?section=printers', icon: Printer },
+      { label: 'Users', to: '/manage?section=users', icon: Users },
+      { label: 'Audit Log', to: '/professor/log', icon: BarChart3 },
     ];
   };
 
@@ -125,13 +114,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
     const targetUser = users.find((u) => u.id === userId);
     if (!targetUser) return;
     switchRoleUser(userId);
-    if (targetUser.role === 'STUDENT') {
-      navigate('/student/dashboard');
-    } else if (targetUser.role === 'PROFESSOR') {
-      navigate('/professor/dashboard');
-    } else {
-      navigate('/pc/dashboard');
-    }
+    navigate(HOME_ROUTE[targetUser.role]);
   };
 
   const handleLogout = () => {
@@ -139,12 +122,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
     navigate('/login');
   };
 
-  const roleDisplayLabel =
-    currentUser.role === 'STUDENT'
-      ? 'Student'
-      : currentUser.role === 'PROFESSOR'
-      ? 'Professor'
-      : 'PC Administrator';
+  const roleDisplayLabel = {
+    STUDENT: 'Student',
+    PROFESSOR: 'Approver',
+    LAB_INCHARGE: 'Lab In-Charge',
+  }[currentUser.role];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F4F3] text-[#171717]">
@@ -169,12 +151,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
 
           <button
             type="button"
-            onClick={() => {
-              if (currentUser.role === 'STUDENT') navigate('/student/dashboard');
-              else if (currentUser.role === 'PROFESSOR')
-                navigate('/professor/dashboard');
-              else navigate('/pc/dashboard');
-            }}
+            onClick={() => navigate(HOME_ROUTE[currentUser.role])}
             className="cursor-pointer focus:outline-none"
           >
             <SrhLogo variant="dark-text" subtitle="system" />
@@ -210,14 +187,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleRoleSwitch('USR-PC-01')}
+            onClick={() => handleRoleSwitch('USR-LAB-01')}
             className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
-              currentUser.role === 'PC_ADMIN'
+              currentUser.role === 'LAB_INCHARGE'
                 ? 'bg-[#D54407] text-white shadow-2xs'
                 : 'text-[#575756] hover:text-[#171717] hover:bg-white/80'
             }`}
           >
-            PC Admin
+            Lab In-Charge
           </button>
           <div className="h-3.5 w-[1px] bg-[#DDDAD8] mx-0.5" />
           <button
@@ -276,7 +253,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
                 location.pathname === itemPath ||
                 (itemPath !== '/student/dashboard' &&
                   itemPath !== '/professor/dashboard' &&
-                  itemPath !== '/pc/dashboard' &&
                   itemPath !== '/student/requests' &&
                   location.pathname.startsWith(itemPath));
 
@@ -285,11 +261,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
                 isActive =
                   location.pathname === itemPath &&
                   location.search.includes(itemQuery);
-              } else if (
-                (itemPath === '/professor/dashboard' ||
-                  itemPath === '/pc/dashboard') &&
-                location.search
-              ) {
+              } else if (itemPath === '/professor/dashboard' && location.search) {
                 isActive = false;
               }
 
@@ -358,14 +330,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleRoleSwitch('USR-PC-01')}
+                  onClick={() => handleRoleSwitch('USR-LAB-01')}
                   className={`px-2 py-1 text-[11px] rounded font-medium ${
-                    currentUser.role === 'PC_ADMIN'
+                    currentUser.role === 'LAB_INCHARGE'
                       ? 'bg-[#1662F3] text-white'
                       : 'bg-slate-100 text-slate-700'
                   }`}
                 >
-                  PC Admin
+                  Lab
                 </button>
               </div>
             </div>

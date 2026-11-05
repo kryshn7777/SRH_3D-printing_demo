@@ -101,14 +101,13 @@ export const PrinterAccessPage: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-slate-900">
                 {request.currentStatus === 'ACCESS_REVOKED'
-                  ? 'Access Revoked by PC Administrator'
+                  ? 'Access Revoked by Approver'
                   : 'Access Not Yet Available'}
               </h2>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                 Printer login credentials and backend connection endpoints are strictly locked until Request{' '}
-                <strong>#{request.id} ({request.projectTitle})</strong> has completed both{' '}
-                <strong> Stage 2 (Professor Approval)</strong> and{' '}
-                <strong>Stage 3 (PC Administrator Final Authorization)</strong>.
+                <strong>#{request.id} ({request.projectTitle})</strong> has been approved in{' '}
+                <strong>Stage 2 (Approval by Prof. Ajinkya Keskar)</strong>.
               </p>
             </div>
           </div>
