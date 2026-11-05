@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
 // Student credentials keyed by matriculation number. Only salted hashes are stored.
 type Credentials = Record<string, { userId: string; salt: string; hash: string }>;
 
-const MATRIC_RE = /^\d{6,8}$/;
+const MATRIC_RE = /^\d{6,10}$/;
 const SRH_EMAIL_RE = /@([a-z0-9-]+\.)*(srh-berlin|srh)\.de$/i;
 
 export interface SignUpPayload {
@@ -321,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fail = (error: string) => ({ ok: false, error });
     if (!name) return fail('Please enter your full name.');
     if (!SRH_EMAIL_RE.test(email)) return fail('Please use your SRH university email (@srh-berlin.de).');
-    if (!MATRIC_RE.test(matric)) return fail('Matriculation number must be 6 to 8 digits.');
+    if (!MATRIC_RE.test(matric)) return fail('Matriculation number must be 6 to 10 digits.');
     if (!DEPARTMENTS.includes(p.department)) return fail('Please choose your department.');
     if (p.password.length < 8) return fail('Password must be at least 8 characters.');
     if (credentials[matric] || users.some((u) => u.matriculationNumber === matric)) {

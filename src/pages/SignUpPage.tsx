@@ -118,7 +118,7 @@ export const SignUpPage: React.FC = () => {
                 autoComplete="username"
                 value={matriculationNumber}
                 onChange={(e) => setMatriculationNumber(e.target.value)}
-                placeholder="e.g. 1100421"
+                placeholder="e.g. 100001221"
                 required
                 className="srh-textinput"
               />
