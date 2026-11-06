@@ -24,6 +24,16 @@ interface StoredModelRecord {
   savedAt: string;
 }
 
+// When a backend is configured, models are stored remotely (see lib/modelStore.ts).
+interface RemoteModelStore {
+  save(buffer: ArrayBuffer, fileName: string, fileType: string): Promise<string>;
+  load(key: string): Promise<StoredModelRecord | null>;
+}
+let remoteStore: RemoteModelStore | null = null;
+export function registerRemoteModelStore(store: RemoteModelStore): void {
+  remoteStore = store;
+}
+
 function openFilesDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
@@ -43,7 +53,9 @@ export async function saveModelBlob(
   buffer: ArrayBuffer,
   fileName: string,
   fileType: string
-): Promise<void> {
+): Promise<string> {
+  // Remote: the server-side path replaces the local key, and upload errors reach the caller.
+  if (remoteStore) return remoteStore.save(buffer, fileName, fileType);
   try {
     const db = await openFilesDb();
     await new Promise<void>((resolve, reject) => {
@@ -64,11 +76,13 @@ export async function saveModelBlob(
   } catch {
     // Fallback if IndexedDB is blocked in private mode
   }
+  return key;
 }
 
 export async function loadModelBlob(
   key: string
 ): Promise<StoredModelRecord | null> {
+  if (remoteStore && key.includes('/')) return remoteStore.load(key).catch(() => null);
   try {
     const db = await openFilesDb();
     const result = await new Promise<StoredModelRecord | null>((resolve, reject) => {

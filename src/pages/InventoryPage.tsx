@@ -38,6 +38,7 @@ export const InventoryPage: React.FC = () => {
   const {
     currentUser,
     inventory,
+    isLive,
     switchRoleUser,
     addInventoryItem,
     setInventoryQuantity,
@@ -60,7 +61,7 @@ export const InventoryPage: React.FC = () => {
   const lowCount = inventory.filter((i) => stockStatus(i) === 'LOW').length;
   const outCount = inventory.filter((i) => stockStatus(i) === 'OUT').length;
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const isFilament = tab === 'FILAMENT';
@@ -68,7 +69,7 @@ export const InventoryPage: React.FC = () => {
       setError('Colour is required for filament.');
       return;
     }
-    const res = addInventoryItem({
+    const res = await addInventoryItem({
       category: tab,
       name: isFilament ? `${material} — ${colour.trim()}` : name.trim(),
       material: isFilament ? material : undefined,
@@ -95,6 +96,7 @@ export const InventoryPage: React.FC = () => {
             <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
             <span>Inventory is read-only. Sign in as the Lab In-Charge to update stock.</span>
           </div>
+          {!isLive && (
           <button
             type="button"
             onClick={() => switchRoleUser('USR-LAB-01')}
@@ -102,6 +104,7 @@ export const InventoryPage: React.FC = () => {
           >
             Switch to Lab In-Charge
           </button>
+          )}
         </div>
       )}
 
@@ -278,10 +281,16 @@ export const InventoryPage: React.FC = () => {
                           type="number"
                           min={0}
                           aria-label={`Quantity of ${item.name}`}
-                          value={item.quantity}
-                          onChange={(e) => {
-                            if (e.target.value !== '')
-                              setInventoryQuantity(item.id, Number(e.target.value));
+                          defaultValue={item.quantity}
+                          key={`${item.id}-${item.quantity}`}
+                          onBlur={(e) => {
+                            const n = Number(e.target.value);
+                            if (e.target.value !== '' && n !== item.quantity) {
+                              void setInventoryQuantity(item.id, n);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
                           }}
                           className="w-16 px-2 py-1 rounded border border-slate-300 text-center text-xs font-semibold"
                         />

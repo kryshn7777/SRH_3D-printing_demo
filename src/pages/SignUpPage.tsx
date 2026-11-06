@@ -24,7 +24,7 @@ const Field: React.FC<{ id: string; label: string; children: React.ReactNode }> 
 );
 
 export const SignUpPage: React.FC = () => {
-  const { signUpStudent } = useApp();
+  const { isLive, signUpStudent } = useApp();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -36,6 +36,9 @@ export const SignUpPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [staff, setStaff] = useState(false);
+  const [enrolCode, setEnrolCode] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,10 +48,17 @@ export const SignUpPage: React.FC = () => {
       return;
     }
     setBusy(true);
-    const res = await signUpStudent({ name, email, matriculationNumber, department, password });
+    const res = await signUpStudent(
+      staff ? { name, email, password, staff: true, enrolCode } : { name, email, matriculationNumber, department, password }
+    );
     setBusy(false);
-    if (!res.ok || !res.data) {
+    if (!res.ok) {
       setError(res.error || 'Sign-up failed.');
+      return;
+    }
+    if (!res.data) {
+      // live mode: account exists but the email link must be clicked first
+      setNotice(res.message || 'Check your inbox to confirm your email address, then log in.');
       return;
     }
     navigate(HOME_ROUTE[res.data.role]);
@@ -73,6 +83,16 @@ export const SignUpPage: React.FC = () => {
             Students register once, then log in with their matriculation number.
           </p>
 
+          {notice ? (
+            <div role="status" className="p-4 rounded-[10px] bg-green-50 border border-green-300 text-[14px] text-green-900">
+              <p className="font-bold mb-1">Almost done</p>
+              <p>{notice}</p>
+              <Link to="/login" className="inline-block mt-3 font-bold underline underline-offset-2">
+                Go to log in
+              </Link>
+            </div>
+          ) : (
+          <>
           {error && (
             <div
               role="alert"
@@ -110,6 +130,22 @@ export const SignUpPage: React.FC = () => {
               />
             </Field>
 
+            {staff && (
+              <Field id="su-code" label="Staff invitation code">
+                <input
+                  id="su-code"
+                  type="text"
+                  autoComplete="off"
+                  value={enrolCode}
+                  onChange={(e) => setEnrolCode(e.target.value)}
+                  placeholder="From the system owner"
+                  required
+                  className="srh-textinput"
+                />
+              </Field>
+            )}
+
+            {!staff && (<>
             <Field id="su-matric" label="Matriculation number">
               <input
                 id="su-matric"
@@ -142,6 +178,7 @@ export const SignUpPage: React.FC = () => {
                 ))}
               </select>
             </Field>
+            </>)}
 
             <Field id="su-password" label="Password (min. 8 characters)">
               <div className="relative">
@@ -186,6 +223,21 @@ export const SignUpPage: React.FC = () => {
             </button>
           </form>
 
+          {isLive && (
+            <p className="mt-4 text-[13px] text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setStaff((v) => !v);
+                  setError(null);
+                }}
+                className="underline underline-offset-2 text-[#575756] hover:text-[#171717] cursor-pointer"
+              >
+                {staff ? 'I am a student' : 'I am staff (Approver / Lab In-Charge)'}
+              </button>
+            </p>
+          )}
+
           <p className="mt-5 text-[14px] text-center">
             Already registered?{' '}
             <Link
@@ -195,6 +247,8 @@ export const SignUpPage: React.FC = () => {
               Log in
             </Link>
           </p>
+          </>
+          )}
         </div>
       </main>
     </div>

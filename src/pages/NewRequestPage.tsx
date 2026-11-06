@@ -154,8 +154,12 @@ export const NewRequestPage: React.FC = () => {
 
     try {
       const buffer = await file.arrayBuffer();
-      const storageKey = `stl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      await saveModelBlob(storageKey, buffer, file.name, ext.toUpperCase());
+      const storageKey = await saveModelBlob(
+        `stl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        buffer,
+        file.name,
+        ext.toUpperCase()
+      );
 
       const parsed = parseStlOrObjGeometry(buffer, file.name);
       if (ext === 'stl' && (!parsed || parsed.triangleCount === 0)) {
@@ -178,8 +182,8 @@ export const NewRequestPage: React.FC = () => {
         triangleCount: parsed?.triangleCount,
         volumeCm3: parsed?.volumeCm3,
       });
-    } catch {
-      setFileError('Failed to read the selected 3D model file.');
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : 'Failed to read the selected 3D model file.');
     }
   };
 
@@ -202,8 +206,13 @@ export const NewRequestPage: React.FC = () => {
   const attachSampleStl = async () => {
     setFileError(null);
     const sampleBuffer = generateSeedStlArrayBuffer('bracket-joint');
-    const storageKey = `stl_sample_${Date.now()}`;
-    await saveModelBlob(storageKey, sampleBuffer, 'robot_arm_joint.stl', 'STL');
+    let storageKey: string;
+    try {
+      storageKey = await saveModelBlob(`stl_sample_${Date.now()}`, sampleBuffer, 'robot_arm_joint.stl', 'STL');
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : 'Could not attach the sample file.');
+      return;
+    }
     const parsed = parseStlOrObjGeometry(sampleBuffer, 'robot_arm_joint.stl');
     const kb = Math.max(1, Math.round(sampleBuffer.byteLength / 1024));
     setAttachment({
@@ -265,7 +274,7 @@ export const NewRequestPage: React.FC = () => {
     return errs.length === 0;
   };
 
-  const handleAction = (saveAsDraft: boolean) => {
+  const handleAction = async (saveAsDraft: boolean) => {
     if (!validateForm(saveAsDraft)) {
       return;
     }
@@ -276,7 +285,7 @@ export const NewRequestPage: React.FC = () => {
     const chosenMaterial =
       (material as SupportedMaterial) || chosenPrinter.supportedMaterials[0];
 
-    const result = createOrSubmitRequest({
+    const result = await createOrSubmitRequest({
       matriculationNumber,
       projectTitle: projectTitle || 'Untitled Draft Print',
       courseOrDepartment: courseOrDepartment || DEPARTMENTS[0],

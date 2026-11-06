@@ -351,7 +351,7 @@ export const AvailablePrintersPage: React.FC = () => {
               <div className="p-3 rounded-lg bg-blue-50/70 border border-blue-200/70 flex items-start gap-2 text-slate-700">
                 <Info className="w-4 h-4 text-[#1662F3] shrink-0 mt-0.5" />
                 <span>
-                  Network Backend URL ({selectedPrinter.backendUrl}) and login tokens are unlocked automatically once Prof. Ajinkya Keskar approves your request.
+                  The printer's network address and login token are unlocked automatically once Prof. Ajinkya Keskar approves your request.
                 </span>
               </div>
             </div>

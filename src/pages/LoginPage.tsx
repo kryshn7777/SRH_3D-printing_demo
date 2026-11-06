@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
@@ -16,7 +16,7 @@ import { DEPARTMENTS } from '../data/seedData';
 import { Role, HOME_ROUTE } from '../types/models';
 
 export const LoginPage: React.FC = () => {
-  const { loginByMatriculation, switchRoleUser, users } = useApp();
+  const { isLive, ready, currentUser, loginByMatriculation, switchRoleUser, users } = useApp();
   const navigate = useNavigate();
 
   const [matriculationNumber, setMatriculationNumber] = useState('');
@@ -24,12 +24,18 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [staffMode, setStaffMode] = useState(false);
   const [infoModal, setInfoModal] = useState<
     null | 'programmes' | 'printers' | 'how-it-works' | 'contact'
   >(null);
   const [lang, setLang] = useState<'EN' | 'DE'>('EN');
 
   const routeForRole = (role: Role) => navigate(HOME_ROUTE[role]);
+
+  // live mode: an existing session (or a just-confirmed email link) goes straight to the dashboard
+  useEffect(() => {
+    if (isLive && ready && currentUser) navigate(HOME_ROUTE[currentUser.role], { replace: true });
+  }, [isLive, ready, currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +51,7 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleQuickDemoLogin = (userId: string) => {
+    if (isLive) return;
     const user = users.find((u) => u.id === userId);
     if (!user) return;
     setError(null);
@@ -379,7 +386,8 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Three Role Quick-Select Cards on Stage */}
+            {/* Three Role Quick-Select Cards on Stage (demo mode only) */}
+            {!isLive && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <button
                 type="button"
@@ -438,6 +446,7 @@ export const LoginPage: React.FC = () => {
                 </div>
               </button>
             </div>
+            )}
           </div>
 
           {/* Right Column: Official SRH Speech-Bubble Login Card (border-radius: 20px 20px 20px 0px) */}
@@ -471,17 +480,17 @@ export const LoginPage: React.FC = () => {
                   htmlFor="srh-matric-input"
                   className="text-[14px] leading-[20px] text-[#575756] mx-[10px] mb-[5px] inline-flex items-center"
                 >
-                  <span>Matriculation Number</span>
+                  <span>{staffMode ? 'SRH email (staff)' : 'Matriculation Number'}</span>
                   <span className="text-[#D54407] ml-0.5 font-bold">*</span>
                 </label>
                 <input
                   id="srh-matric-input"
-                  type="text"
-                  inputMode="numeric"
+                  type={staffMode ? 'email' : 'text'}
+                  inputMode={staffMode ? 'email' : 'numeric'}
                   autoComplete="username"
                   value={matriculationNumber}
                   onChange={(e) => setMatriculationNumber(e.target.value)}
-                  placeholder="e.g. 100001221"
+                  placeholder={staffMode ? 'name@srh-berlin.de' : 'e.g. 100001221'}
                   required
                   className="srh-textinput"
                 />
@@ -531,6 +540,22 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
+            {isLive && (
+              <p className="mt-3 text-[13px] text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStaffMode((v) => !v);
+                    setMatriculationNumber('');
+                    setError(null);
+                  }}
+                  className="underline underline-offset-2 text-[#575756] hover:text-[#171717] cursor-pointer"
+                >
+                  {staffMode ? 'Student? Log in with your matriculation number' : 'Staff? Log in with your SRH email'}
+                </button>
+              </p>
+            )}
+
             <p className="mt-4 text-[14px] text-center">
               New student?{' '}
               <Link
@@ -542,6 +567,7 @@ export const LoginPage: React.FC = () => {
             </p>
 
             {/* Staff & Demo Accounts (1-Click Sign In) styled with SRH #F5F4F3 & #DDDAD8 */}
+            {!isLive && (
             <div className="mt-6 pt-4 border-t border-[#DDDAD8]">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="font-srh-headline text-[11px] font-bold uppercase tracking-[0.14em] text-[#575756]">
@@ -587,6 +613,7 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
       </section>
@@ -595,6 +622,7 @@ export const LoginPage: React.FC = () => {
           3. OFFICIAL SRH .b_programfinder-stage BAR (#001725)
              Matches "Find your dream study programme" bar on srh-university.de
          =================================================================== */}
+      {!isLive && (
       <section className="bg-[#001725] text-white py-[30px] px-4 sm:px-8 border-t border-white/10">
         <div className="max-w-[1160px] mx-auto">
           <div className="font-srh-headline text-[20px] lg:text-[24px] font-bold leading-[30px] tracking-[0.3px] text-white">
@@ -646,6 +674,7 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* ===================================================================
           4. OFFICIAL SRH FOOTER (.b_footer & .b_footer__bottom in #D54407)

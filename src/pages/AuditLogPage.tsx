@@ -67,19 +67,26 @@ export const AuditLogPage: React.FC = () => {
       'Current Status',
       'Notes',
     ];
-    const rows = filteredLogs.map((l) => [
-      l.id,
-      l.requestId,
-      `"${l.studentName}"`,
-      `"${l.projectTitle}"`,
-      `"${l.printerName}"`,
-      l.material,
-      `"${l.professorApprovalSummary}"`,
-      `"${l.accessSummary}"`,
-      `"${l.timestampFormatted}"`,
-      l.currentStatus,
-      `"${l.notes.replace(/"/g, '""')}"`,
-    ]);
+    // quote + escape every field; a leading = + - @ would run as a formula in Excel, so prefix '
+    const cell = (v: string) => {
+      const t = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+      return `"${t.replace(/"/g, '""')}"`;
+    };
+    const rows = filteredLogs.map((l) =>
+      [
+        l.id,
+        l.requestId,
+        l.studentName,
+        l.projectTitle,
+        l.printerName,
+        l.material,
+        l.professorApprovalSummary,
+        l.accessSummary,
+        l.timestampFormatted,
+        l.currentStatus,
+        l.notes,
+      ].map((v) => cell(String(v ?? '')))
+    );
     const csvContent =
       [headers.join(','), ...rows.map((r) => r.join(','))].join('\n') + '\n';
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

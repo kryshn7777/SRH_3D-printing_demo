@@ -25,7 +25,9 @@ export const LabManagementPage: React.FC = () => {
     addPrinter,
     updatePrinterMaintenance,
     toggleUserActive,
+    isLive,
     switchRoleUser,
+    addToast,
   } = useApp();
   const navigate = useNavigate();
   const isApprover = currentUser?.role === 'PROFESSOR';
@@ -57,10 +59,10 @@ export const LabManagementPage: React.FC = () => {
     setMaintError(null);
   };
 
-  const handleMaintenanceSubmit = (e: React.FormEvent) => {
+  const handleMaintenanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!maintPrinter) return;
-    const res = updatePrinterMaintenance(maintPrinter.id, {
+    const res = await updatePrinterMaintenance(maintPrinter.id, {
       on: maintOn,
       by: maintBy,
       notes: maintNotes,
@@ -72,10 +74,10 @@ export const LabManagementPage: React.FC = () => {
     setMaintPrinter(null);
   };
 
-  const handleAddPrinterSubmit = (e: React.FormEvent) => {
+  const handleAddPrinterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrinterName.trim()) return;
-    addPrinter({
+    const res = await addPrinter({
       name: newPrinterName.trim(),
       model: newPrinterModel.trim() || newPrinterName.trim(),
       technology: 'FDM',
@@ -89,6 +91,10 @@ export const LabManagementPage: React.FC = () => {
       illustrationKey: 'prusa-mk4',
       usageRestrictions: ['Standard SRH MakerLab safety rules apply.'],
     });
+    if (!res.ok) {
+      addToast('error', 'Could Not Add Printer', res.error || 'Please check the values and try again.');
+      return;
+    }
     setNewPrinterName('');
     setNewPrinterModel('');
     setNewPrinterModal(false);
@@ -109,6 +115,7 @@ export const LabManagementPage: React.FC = () => {
               . Switch to Ajinkya Keskar or the Lab In-Charge to manage printers.
             </span>
           </div>
+          {!isLive && (
           <button
             type="button"
             onClick={() => switchRoleUser('USR-PROF-01')}
@@ -116,6 +123,7 @@ export const LabManagementPage: React.FC = () => {
           >
             Switch to Ajinkya Keskar
           </button>
+          )}
         </div>
       )}
 

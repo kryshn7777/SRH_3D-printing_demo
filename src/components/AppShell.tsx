@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   Boxes,
@@ -38,6 +38,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const {
+    isLive,
+    ready,
     currentUser,
     users,
     switchRoleUser,
@@ -52,8 +54,15 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navySidebar, setNavySidebar] = useState(false);
 
+  if (!ready) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#F5F4F3] text-sm text-slate-500">
+        Loading…
+      </div>
+    );
+  }
   if (!currentUser) {
-    return <>{children}</>;
+    return <Navigate to="/login" replace />;
   }
 
   // Find latest approved request for student quick-link to Printer Access
@@ -158,7 +167,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
           </button>
         </div>
 
-        {/* Center Demo Role Switcher Bar for effortless evaluation */}
+        {/* Center Demo Role Switcher Bar (demo mode only) */}
+        {!isLive && (
         <div className="hidden md:flex items-center gap-1.5 bg-[#F5F4F3] border border-[#DDDAD8] rounded-lg p-1 text-xs">
           <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#575756]">
             Demo Role:
@@ -207,6 +217,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
             Reset
           </button>
         </div>
+        )}
 
         {/* Right User Profile & Logout */}
         <div className="flex items-center gap-3">
@@ -301,6 +312,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
 
           {/* Mobile role switcher + sidebar theme toggle */}
           <div className="px-3 pt-4 border-t border-slate-200/60 space-y-2">
+            {!isLive && (
             <div className="md:hidden space-y-1 pb-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">
                 Switch Demo Role
@@ -341,6 +353,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
                 </button>
               </div>
             </div>
+            )}
 
             <button
               type="button"

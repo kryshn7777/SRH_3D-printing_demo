@@ -15,7 +15,7 @@ import { StatusBadge } from '../components/StatusBadge';
 type ProfTab = 'pending' | 'approved' | 'rejected';
 
 export const ProfessorDashboardPage: React.FC = () => {
-  const { currentUser, requests, approvals, switchRoleUser } = useApp();
+  const { isLive, currentUser, requests, approvals, switchRoleUser } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -107,6 +107,7 @@ export const ProfessorDashboardPage: React.FC = () => {
               . Switch to Professor role to approve or reject requests.
             </span>
           </div>
+          {!isLive && (
           <button
             type="button"
             onClick={() => switchRoleUser('USR-PROF-01')}
@@ -114,6 +115,7 @@ export const ProfessorDashboardPage: React.FC = () => {
           >
             Switch to Ajinkya Keskar
           </button>
+          )}
         </div>
       )}
 

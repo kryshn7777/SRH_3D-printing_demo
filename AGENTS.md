@@ -13,7 +13,7 @@
 
 ## Architecture Summary
 - **Stack**: React 19, TypeScript, Vite 6, Tailwind CSS v4, React Router v7, Lucide Icons.
-- **Persistence**: Client-side `localStorage` keys prefixed with `srh_3dp_*_v6` in `src/context/AppContext.tsx`.
+- **Persistence (dual mode)**: `src/context/AppContext.tsx` picks the provider. No env vars = `LocalProvider` (localStorage keys `srh_3dp_*_v6`, demo data). `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` set = lazy `LiveProvider` (Supabase: RLS, RPCs, private storage bucket, `login` edge function). Shared interface in `src/context/appTypes.ts`. Backend setup: `supabase/README.md`; schema `supabase/schema.sql`; tests `npm run test:db`. Never put the service_role key in the app.
 - **Seeded Demo Identities**:
   - **Student**: `Anna Müller` (`anna.mueller@srh-berlin.de`)
   - **Approver**: `Ajinkya Keskar` (`ajinkya.keskar@srh-berlin.de`) — sole approve/reject/revoke authority; also manages printers and users. No PC Admin role.

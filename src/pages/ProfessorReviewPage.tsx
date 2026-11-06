@@ -26,6 +26,7 @@ export const ProfessorReviewPage: React.FC = () => {
     printers,
     professorReviewRequest,
     revokePrinterAccess,
+    isLive,
     switchRoleUser,
     addToast,
   } = useApp();
@@ -70,16 +71,16 @@ export const ProfessorReviewPage: React.FC = () => {
     (a) => a.requestId === request.id && a.reviewerRole === 'PROFESSOR'
   );
 
-  const handleDecision = (
+  const handleDecision = async (
     decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED'
   ) => {
     setError(null);
-    const res = professorReviewRequest(
+    const res = await professorReviewRequest(
       request.id,
       decision,
       comments,
       assignedPrinterId,
-      validUntil.trim() || undefined
+      validUntil || undefined
     );
     if (!res.ok) {
       setError(res.error || 'Could not record decision.');
@@ -88,10 +89,10 @@ export const ProfessorReviewPage: React.FC = () => {
     navigate('/professor/dashboard');
   };
 
-  const handleRevoke = () => {
+  const handleRevoke = async () => {
     setConfirmRevokeOpen(false);
     setError(null);
-    const res = revokePrinterAccess(request.id, revokeReason);
+    const res = await revokePrinterAccess(request.id, revokeReason);
     if (!res.ok) {
       setError(res.error || 'Could not revoke access.');
       return;
@@ -132,6 +133,7 @@ export const ProfessorReviewPage: React.FC = () => {
               </p>
             </div>
           </div>
+          {!isLive && (
           <button
             type="button"
             onClick={() => switchRoleUser('USR-PROF-01')}
@@ -139,6 +141,7 @@ export const ProfessorReviewPage: React.FC = () => {
           >
             Switch to Ajinkya Keskar
           </button>
+          )}
         </div>
       )}
 
@@ -383,10 +386,11 @@ export const ProfessorReviewPage: React.FC = () => {
             </label>
             <input
               id="prof-valid-until"
-              type="text"
+              type="date"
               value={validUntil}
+              min={new Date().toLocaleDateString('en-CA')}
+              max={new Date(Date.now() + 90 * 86400000).toLocaleDateString('en-CA')}
               onChange={(e) => setValidUntil(e.target.value)}
-              placeholder="e.g. 20 Nov 2026, 23:59"
               className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1662F3]"
             />
           </div>
