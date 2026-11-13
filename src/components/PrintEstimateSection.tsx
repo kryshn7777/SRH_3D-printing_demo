@@ -245,9 +245,6 @@ export const PrintEstimateSection: React.FC<{
                       maxLength={80}
                       aria-label="Value"
                       onChange={(e) => editImageRow(i, { value: e.target.value })}
-                      onBlur={() => {
-                        if (!r.value.trim()) dropImageRow(i); // value must be 1-80 chars
-                      }}
                       className="w-full rounded border border-slate-300 px-2 py-1"
                     />
                   </td>

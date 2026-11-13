@@ -491,7 +491,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Rebuilds the print estimate from known keys only: {rows, imageName?, slicedFileName?}.
--- Rows are text exactly as shown or read (<= 60 rows; an empty label is allowed so no
+-- Rows are text exactly as shown or read (<= 200 rows; an empty label is allowed so no
 -- OCR line is dropped). Anything off -> 'Invalid print estimate.'
 create or replace function private.clean_estimate(p jsonb)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$

@@ -148,14 +148,14 @@ async function readThreeMf(file: Blob): Promise<EstimateRow[]> {
   const es = await entries(file);
   const get = (n: string) => es.find(e => e.name === n);
   const si = get('Metadata/slice_info.config');
-  const plates = si ? [...(await entryText(file, si)).matchAll(/<plate>([\s\S]*?)<\/plate>/g)].map(m => m[1]) : [];
+  const plates = si ? [...(await entryText(file, si, undefined, 4 << 20)).matchAll(/<plate>([\s\S]*?)<\/plate>/g)].map(m => m[1]) : [];
   if (!plates.length) {
     if (es.some(e => e.name.startsWith('3D/') || e.name.startsWith('Metadata/'))) throw new Error(UNSLICED_3MF);
     throw new Error(NOT_BAMBU);
   }
   const ps = get('Metadata/project_settings.config');
   let costs: number[] = [];
-  try { costs = ps ? (JSON.parse(await entryText(file, ps)).filament_cost ?? []).map(Number) : []; } catch { /* no prices */ }
+  try { costs = ps ? (JSON.parse(await entryText(file, ps, undefined, 4 << 20)).filament_cost ?? []).map(Number) : []; } catch { /* no prices */ }
   const rows: EstimateRow[] = [];
   for (let k = 0; k < plates.length; k++) {
     const x = plates[k];

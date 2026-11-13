@@ -66,7 +66,7 @@ const ChoiceGroup: React.FC<{
 const ALLOWED_EXTENSIONS = ['stl', '3mf', 'obj'];
 
 export const NewRequestPage: React.FC = () => {
-  const { currentUser, printers, requests, createOrSubmitRequest } = useApp();
+  const { currentUser, printers, requests, createOrSubmitRequest, isLive } = useApp();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedPrinterId = searchParams.get('printerId') || '';
@@ -341,14 +341,17 @@ export const NewRequestPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={fillSampleProject}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1662F3] border border-blue-200 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Auto-Fill Demo Request
-        </button>
+        {/* Demo only: in live mode this would hand real students a one-click made-up estimate. */}
+        {!isLive && (
+          <button
+            type="button"
+            onClick={fillSampleProject}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1662F3] border border-blue-200 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Auto-Fill Demo Request
+          </button>
+        )}
       </div>
 
       {/* Validation Errors Banner */}
