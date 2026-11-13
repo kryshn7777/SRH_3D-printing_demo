@@ -62,7 +62,12 @@ export async function readEstimateImage(file: File): Promise<{ rows: EstimateRow
       const { createWorker } = await import('tesseract.js');
       // eng only: measured on the reference panel, eng+deu misreads the "g" unit as "9" ("1.199");
       // German slicer labels are plain ASCII words that the eng model reads fine.
-      const worker = await createWorker('eng');
+      // Production: self-hosted engine (see tesseractAssets in vite.config.ts); the CSP blocks CDNs.
+      // A same-origin worker URL (not a blob) keeps the page CSP out of the worker. Dev uses the CDN defaults.
+      const t = `${import.meta.env.BASE_URL}tesseract/`;
+      const worker = await createWorker('eng', 1, import.meta.env.PROD
+        ? { workerPath: `${t}worker.min.js`, corePath: `${t}core`, langPath: `${t}lang`, workerBlobURL: false }
+        : {});
       try {
         text = (await worker.recognize(await toPng(oc))).data.text;
       } finally {
