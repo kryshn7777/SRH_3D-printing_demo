@@ -263,4 +263,10 @@ On ProfessorReviewPage and StudentRequestDetailsPage, a "Print Estimate" card sh
   client-side parsing is acceptable and the sliced file is not stored.
 - No same-slice files from the user. The example screenshot is a reference image from
   the internet. Copy it to `src/utils/__fixtures__/bambu/estimate-panel.png` as the OCR
-  test image; its expected rows are the 6 rows in "Intent".
+  test image; its expected rows are:
+  - Total Filament: 0.39 m 1.19 g
+  - Model Filament: 0.39 m 1.18 g
+  - Cost: 0.03
+  - Prepare time: 6m43s
+  - Model printing time: 3m51s
+  - Total time: 10m35s
