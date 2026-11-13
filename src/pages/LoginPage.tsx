@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Plus,
   ArrowRight,
   X,
 } from 'lucide-react';
@@ -371,7 +370,7 @@ export const LoginPage: React.FC = () => {
             <div className="space-y-5">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[12px_12px_12px_2px] bg-[#001725]/85 border border-white/20 text-white font-srh-headline text-[12px] font-bold uppercase tracking-[0.166em]">
                 <span className="w-2 h-2 rounded-full bg-[#D54407]" />
-                SRH University Berlin • MakerLab &amp; FDM Print Center
+                SRH University Berlin • MakerLab &amp; 3D Printer Request
               </div>
 
               {/* Exact SRH .b_headline--h2 > .b_stage-headline with box-decoration-break: clone */}
@@ -618,63 +617,6 @@ export const LoginPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ===================================================================
-          3. OFFICIAL SRH .b_programfinder-stage BAR (#001725)
-             Matches "Find your dream study programme" bar on srh-university.de
-         =================================================================== */}
-      {!isLive && (
-      <section className="bg-[#001725] text-white py-[30px] px-4 sm:px-8 border-t border-white/10">
-        <div className="max-w-[1160px] mx-auto">
-          <div className="font-srh-headline text-[20px] lg:text-[24px] font-bold leading-[30px] tracking-[0.3px] text-white">
-            Select your role in the SRH Berlin 3D Printing Workflow
-          </div>
-
-          <div className="mt-[15px] flex flex-col lg:flex-row bg-white lg:bg-[#001725] rounded-[20px_20px_20px_0px] lg:rounded-none overflow-hidden shadow-lg">
-            {/* Column 1: Student Portal */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('USR-STU-01')}
-              className="flex-1 bg-white hover:bg-[#F5F4F3] text-[#575756] py-[20px] px-[30px] border-b lg:border-b-0 lg:border-r border-[#AAA39D] text-left relative group transition-colors cursor-pointer"
-            >
-              <span className="block text-[12px] font-normal leading-[20px] tracking-[0.3px] text-[#575756]">
-                Step 01 • Students &amp; Applicants
-              </span>
-              <span className="block text-[15px] lg:text-[16px] font-bold leading-[28px] tracking-[0.3px] text-[#171717] group-hover:text-[#D54407] transition-colors pr-6">
-                Anna Müller — Upload STL &amp; Request Print
-              </span>
-              <Plus className="w-6 h-6 text-[#D54407] absolute right-5 top-1/2 -translate-y-1/2 group-hover:rotate-90 transition-transform" />
-            </button>
-
-            {/* Column 2: Professor Portal */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('USR-PROF-01')}
-              className="flex-1 bg-white hover:bg-[#F5F4F3] text-[#575756] py-[20px] px-[30px] border-b lg:border-b-0 lg:border-r border-[#AAA39D] text-left relative group transition-colors cursor-pointer"
-            >
-              <span className="block text-[12px] font-normal leading-[20px] tracking-[0.3px] text-[#575756]">
-                Step 02 • Approval & Lab Access
-              </span>
-              <span className="block text-[15px] lg:text-[16px] font-bold leading-[28px] tracking-[0.3px] text-[#171717] group-hover:text-[#D54407] transition-colors pr-6">
-                Prof. Ajinkya Keskar — Approve, Reject &amp; Grant Access
-              </span>
-              <Plus className="w-6 h-6 text-[#D54407] absolute right-5 top-1/2 -translate-y-1/2 group-hover:rotate-90 transition-transform" />
-            </button>
-
-            {/* Right CTA Button (.b_programfinder-stage .b_button--primary) */}
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById('srh-matric-input');
-                el?.focus();
-              }}
-              className="bg-[#D54407] hover:bg-[#C12D00] text-white font-bold text-[16px] leading-[20px] py-[18px] px-[28px] lg:w-[220px] lg:rounded-[0px_20px_20px_0px] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            >
-              Find printer
-            </button>
-          </div>
-        </div>
-      </section>
-      )}
 
       {/* ===================================================================
           4. OFFICIAL SRH FOOTER (.b_footer & .b_footer__bottom in #D54407)
@@ -687,12 +629,12 @@ export const LoginPage: React.FC = () => {
               Quality is measurable • Berlin Campus
             </span>
             <h3 className="font-srh-headline text-[22px] sm:text-[26px] font-bold text-[#575756] mt-1">
-              Study &amp; prototype with excellence — SRH Berlin MakerLab &amp; FDM Print Center
+              Study &amp; prototype with excellence — SRH Berlin MakerLab &amp; 3D Printer Request
             </h3>
           </div>
           <div className="text-[14px] text-[#575756] space-y-0.5 md:text-right">
             <div className="font-bold text-[#171717]">
-              Ernst-Reuter-Platz 10, 10587 Berlin
+              Sonnenallee 221 A-F, 12059 Berlin
             </div>
             <div>
               Faculty Supervisor &amp; Lab Approver: Prof. Ajinkya Keskar
@@ -785,16 +727,6 @@ export const LoginPage: React.FC = () => {
 
             {/* Official SRH Secondary Footer Links (.b_footer__secondary-nav-list) */}
             <ul className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[12px] leading-[24px] text-white">
-              <li>© 2026 SRH University Berlin</li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setInfoModal('contact')}
-                  className="hover:underline underline-offset-2 cursor-pointer"
-                >
-                  Your contact
-                </button>
-              </li>
               <li>
                 <button
                   type="button"
@@ -814,16 +746,6 @@ export const LoginPage: React.FC = () => {
                 </button>
               </li>
               <li>
-                <a
-                  href="https://www.srh.de/de"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:underline underline-offset-2"
-                >
-                  SRH Holding
-                </a>
-              </li>
-              <li>
                 <button
                   type="button"
                   onClick={() => setInfoModal('how-it-works')}
@@ -831,9 +753,6 @@ export const LoginPage: React.FC = () => {
                 >
                   Data Privacy Policy
                 </button>
-              </li>
-              <li className="text-white/80 ml-auto">
-                Demonstration Environment • IndexedDB &amp; LocalStorage Persistence Active
               </li>
             </ul>
           </div>
@@ -918,8 +837,8 @@ export const LoginPage: React.FC = () => {
 
             {infoModal === 'contact' && (
               <div className="mt-4 space-y-2 text-[14px] text-[#171717]">
-                <p className="font-bold">SRH Berlin MakerLab &amp; Print Center</p>
-                <p>Ernst-Reuter-Platz 10, 10587 Berlin — Building B, Room 104</p>
+                <p className="font-bold">SRH Berlin MakerLab &amp; 3D Printer Request</p>
+                <p>Sonnenallee 221 A-F, 12059 Berlin — Building B, Room 104</p>
                 <p>Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)</p>
                 <p>Lab Hours: Mon–Fri, 08:30 – 19:00 CET</p>
               </div>

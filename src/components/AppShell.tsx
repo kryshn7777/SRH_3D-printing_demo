@@ -390,10 +390,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
               <span className="font-semibold text-[#171717]">
                 SRH University | Design your Future
               </span>
-              <span>— Campus Berlin MakerLab &amp; FDM Print Center</span>
+              <span>— Campus Berlin MakerLab &amp; 3D Printer Request</span>
             </div>
             <div className="text-[11px] text-[#575756]">
-              Ernst-Reuter-Platz 10, 10587 Berlin • Official SRH Study Programmes Integrated
+              Sonnenallee 221 A-F, 12059 Berlin • Official SRH Study Programmes Integrated
             </div>
           </footer>
         </main>

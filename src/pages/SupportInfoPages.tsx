@@ -190,7 +190,7 @@ export const HelpPage: React.FC = () => {
             Contact the SRH Print Center
           </div>
           <p className="text-slate-600 leading-relaxed">
-            Location: Building B, Room 104 (Ernst-Reuter-Platz 10, Berlin)
+            Location: Building B, Room 104 (Sonnenallee 221 A-F, 12059 Berlin)
             <br />
             Professor: Ajinkya Keskar (ajinkya.keskar@srh-berlin.de)
           </p>
