@@ -344,6 +344,8 @@ create table if not exists public.print_requests (
   preview_key             text check (char_length(preview_key) <= 40),
   triangle_count          int  check (triangle_count >= 0),
   volume_cm3              numeric check (volume_cm3 >= 0),
+  estimate                jsonb,
+  estimate_image_path     text check (char_length(estimate_image_path) <= 300),
   status                  text not null default 'DRAFT' check (status in (
                             'DRAFT','SUBMITTED','PENDING_PROFESSOR_APPROVAL','CHANGES_REQUESTED',
                             'REJECTED_BY_PROFESSOR','APPROVED_ACCESS_GRANTED','ACCESS_REVOKED')),
@@ -352,6 +354,10 @@ create table if not exists public.print_requests (
   submitted_at            timestamptz not null default now(),
   created_at              timestamptz not null default now()
 );
+-- Tables created before the print estimate feature: add the columns.
+alter table public.print_requests add column if not exists estimate jsonb;
+alter table public.print_requests add column if not exists estimate_image_path text
+  check (char_length(estimate_image_path) <= 300);
 create index if not exists print_requests_student_idx on public.print_requests (student_id);
 create index if not exists print_requests_status_idx  on public.print_requests (status);
 
@@ -476,6 +482,68 @@ returns boolean language sql stable security definer set search_path = '' as $$
                  where o.bucket_id = 'models' and o.name = p_path and o.owner_id = p_uid::text)
 $$;
 
+create or replace function private.valid_estimate_path(p_path text, p_uid uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select p_path is not null
+     and split_part(p_path, '/', 1) = p_uid::text
+     and exists (select 1 from storage.objects o
+                 where o.bucket_id = 'estimates' and o.name = p_path and o.owner_id = p_uid::text)
+$$;
+
+-- Rebuilds the print estimate from known keys only: {rows, imageName?, slicedFileName?}.
+-- Rows are text exactly as shown or read (<= 60 rows; an empty label is allowed so no
+-- OCR line is dropped). Anything off -> 'Invalid print estimate.'
+create or replace function private.clean_estimate(p jsonb)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_rows  jsonb := '[]'::jsonb;
+  v_row   jsonb;
+  v_out   jsonb;
+  v_plate int;
+  v_key   text;
+begin
+  if p is null or jsonb_typeof(p) = 'null' then return null; end if;
+  if jsonb_typeof(p) <> 'object' then raise exception 'Invalid print estimate.'; end if;
+
+  if p ? 'rows' and jsonb_typeof(p -> 'rows') <> 'null' then
+    if jsonb_typeof(p -> 'rows') <> 'array' or jsonb_array_length(p -> 'rows') > 60 then
+      raise exception 'Invalid print estimate.';
+    end if;
+    for v_row in select * from jsonb_array_elements(p -> 'rows') loop
+      if jsonb_typeof(v_row) <> 'object'
+         or jsonb_typeof(v_row -> 'label') is distinct from 'string'
+         or jsonb_typeof(v_row -> 'value') is distinct from 'string'
+         or char_length(v_row ->> 'label') > 60
+         or char_length(v_row ->> 'value') not between 1 and 80
+         or coalesce(v_row ->> 'source', '') not in ('IMAGE', 'FILE')
+      then raise exception 'Invalid print estimate.'; end if;
+      v_plate := null;
+      if v_row ? 'plate' and jsonb_typeof(v_row -> 'plate') <> 'null' then
+        if jsonb_typeof(v_row -> 'plate') <> 'number' or (v_row ->> 'plate') !~ '^[0-9]{1,2}$'
+           or (v_row ->> 'plate')::int not between 1 and 99 then
+          raise exception 'Invalid print estimate.';
+        end if;
+        v_plate := (v_row ->> 'plate')::int;
+      end if;
+      v_rows := v_rows || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
+        'label', v_row ->> 'label', 'value', v_row ->> 'value',
+        'source', v_row ->> 'source', 'plate', v_plate)));
+    end loop;
+  end if;
+
+  v_out := jsonb_build_object('rows', v_rows);
+  foreach v_key in array array['imageName', 'slicedFileName'] loop
+    if p ? v_key and jsonb_typeof(p -> v_key) <> 'null' then
+      if jsonb_typeof(p -> v_key) <> 'string' or char_length(p ->> v_key) not between 1 and 200 then
+        raise exception 'Invalid print estimate.';
+      end if;
+      v_out := v_out || jsonb_build_object(v_key, p ->> v_key);
+    end if;
+  end loop;
+  return v_out;
+end
+$$;
+
 -- Upload quota: at most 20 files per hour and 150 MB in total per user. (A policy cannot
 -- query its own table, hence a SECURITY DEFINER helper.)
 create or replace function private.upload_quota_ok()
@@ -483,7 +551,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
   select count(*) filter (where o.created_at > now() - interval '1 hour') < 20
      and coalesce(sum(coalesce((o.metadata ->> 'size')::bigint, 0)), 0) < 157286400
     from storage.objects o
-   where o.bucket_id = 'models' and o.owner_id = (select auth.uid())::text
+   where o.bucket_id in ('models', 'estimates') and o.owner_id = (select auth.uid())::text
 $$;
 
 create or replace function public.create_request(
@@ -507,11 +575,14 @@ declare
   v_fsize    int  := private.int_or_null(p_payload #>> '{attachment,fileSizeBytes}');
   v_ftype    text := upper(coalesce(p_payload #>> '{attachment,fileType}', ''));
   v_path     text := nullif(p_payload #>> '{attachment,storageKey}', '');
+  v_est      jsonb;
+  v_est_path text := nullif(p_payload #>> '{estimate,imageKey}', '');
   v_status   text := case when p_draft then 'DRAFT' else 'PENDING_PROFESSOR_APPROVAL' end;
 begin
   select * into v_me from public.profiles where id = v_uid and active and role = 'STUDENT';
   if not found then raise exception 'Only students can submit print requests.'; end if;
   perform private.rate_limit('create_request:' || v_uid, 20, interval '1 hour');
+  v_est := private.clean_estimate(p_payload -> 'estimate');
 
   if char_length(v_title) not between 1 and 120 then
     raise exception 'Print item must be 1 to 120 characters.';
@@ -544,6 +615,14 @@ begin
   end if;
   if v_path is not null and not private.valid_model_path(v_path, v_uid) then v_path := null; end if;
 
+  if v_est_path is not null and not private.valid_estimate_path(v_est_path, v_uid) then
+    if not p_draft then raise exception 'Please upload your estimate screenshot again.'; end if;
+    v_est_path := null;
+  end if;
+  if not p_draft and v_est_path is null and jsonb_array_length(coalesce(v_est -> 'rows', '[]'::jsonb)) = 0 then
+    raise exception 'Please attach your print estimate (slicer screenshot or sliced file).';
+  end if;
+
   select * into v_approver from public.profiles
    where role = 'PROFESSOR' and active
    order by (name = btrim(coalesce(p_payload ->> 'contactedApprover', ''))) desc, created_at
@@ -568,6 +647,7 @@ begin
       triangle_count = private.int_or_null(p_payload #>> '{attachment,triangleCount}'),
       volume_cm3 = case when (p_payload #>> '{attachment,volumeCm3}') ~ '^[0-9]{1,9}(\.[0-9]{1,6})?$'
                         then (p_payload #>> '{attachment,volumeCm3}')::numeric end,
+      estimate = v_est, estimate_image_path = v_est_path,
       status = v_status, submitted_at = now()
     where id = p_existing_id
     returning * into v_row;
@@ -576,7 +656,8 @@ begin
       student_id, student_name, student_email, matriculation_number, project_title,
       course_or_department, intended_use, contacted_approver_id, contacted_approver_name,
       printer_id, printer_name, material, quantity, file_name, file_size_bytes, file_type,
-      storage_path, dimensions_mm, preview_key, triangle_count, volume_cm3, status,
+      storage_path, dimensions_mm, preview_key, triangle_count, volume_cm3,
+      estimate, estimate_image_path, status,
       assigned_professor_id, assigned_professor_name)
     values (
       v_me.id, v_me.name, v_me.email, v_me.matriculation_number, v_title,
@@ -587,7 +668,7 @@ begin
       private.int_or_null(p_payload #>> '{attachment,triangleCount}'),
       case when (p_payload #>> '{attachment,volumeCm3}') ~ '^[0-9]{1,9}(\.[0-9]{1,6})?$'
            then (p_payload #>> '{attachment,volumeCm3}')::numeric end,
-      v_status, v_approver.id, v_approver.name)
+      v_est, v_est_path, v_status, v_approver.id, v_approver.name)
     returning * into v_row;
   end if;
 
@@ -617,6 +698,10 @@ begin
   if v_row.contacted_approver_id is null then raise exception 'No approver is available yet. Please contact the lab.'; end if;
   if btrim(v_row.intended_use) = '' or not private.valid_model_path(v_row.storage_path, v_uid) then
     raise exception 'Please complete the form and upload your 3D model before submitting.';
+  end if;
+  if not private.valid_estimate_path(v_row.estimate_image_path, v_uid)
+     and jsonb_array_length(coalesce(v_row.estimate -> 'rows', '[]'::jsonb)) = 0 then
+    raise exception 'Please attach your print estimate (slicer screenshot or sliced file).';
   end if;
 
   update public.print_requests set status = 'PENDING_PROFESSOR_APPROVAL', submitted_at = now()
@@ -920,6 +1005,30 @@ create policy models_insert on storage.objects for insert to authenticated
 create policy models_select on storage.objects for select to authenticated
   using (
     bucket_id = 'models'
+    and (split_part(name, '/', 1) = (select auth.uid())::text or (select private.is_professor()))
+  );
+
+-- Print estimate screenshots (PNG, <= 5 MB), same rules as models.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('estimates', 'estimates', false, 5242880, array['image/png'])
+on conflict (id) do update
+  set public = false, file_size_limit = 5242880, allowed_mime_types = array['image/png'];
+
+drop policy if exists estimates_insert on storage.objects;
+drop policy if exists estimates_select on storage.objects;
+
+create policy estimates_insert on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'estimates'
+    and (select private.is_student())
+    and split_part(name, '/', 1) = (select auth.uid())::text
+    and name ~ '^[0-9a-f-]{36}/[A-Za-z0-9._-]{1,120}\.png$'
+    and (select private.upload_quota_ok())
+  );
+
+create policy estimates_select on storage.objects for select to authenticated
+  using (
+    bucket_id = 'estimates'
     and (split_part(name, '/', 1) = (select auth.uid())::text or (select private.is_professor()))
   );
 

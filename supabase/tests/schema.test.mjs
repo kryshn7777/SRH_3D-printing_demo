@@ -66,7 +66,9 @@ const student = (n, matric) => ({
 const payload = (path, over = {}) => JSON.stringify({
   projectTitle: 'Bracket', courseOrDepartment: 'B.Eng. Applied Mechatronic Systems',
   intendedUse: 'Test', contactedApprover: 'Prof Keskar', printerId: 'PR-01', material: 'PLA',
-  quantity: 1, attachment: { fileName: 'a.stl', fileSizeBytes: 1000, fileType: 'STL', storageKey: path }, ...over,
+  quantity: 1, attachment: { fileName: 'a.stl', fileSizeBytes: 1000, fileType: 'STL', storageKey: path },
+  estimate: { rows: [{ label: 'Total time', value: '10m 35s', source: 'FILE', plate: 1 }], slicedFileName: 'a.gcode' },
+  ...over,
 });
 
 console.log('sign-up rules');
@@ -165,6 +167,8 @@ console.log('storage rules');
 const own = (u, f = 'part.stl') => `${u}/${f}`;
 const putObj = (u, name) => as(u, 'authenticated',
   `insert into storage.objects (bucket_id, name, owner_id) values ('models', $1, $2)`, [name, u]);
+const putEst = (u, name) => as(u, 'authenticated',
+  `insert into storage.objects (bucket_id, name, owner_id) values ('estimates', $1, $2)`, [name, u]);
 await test('student can upload into own folder only', async () => {
   await putObj(s1, own(s1));
   await rejects(putObj(s1, own(s2)), /row-level security/);
@@ -247,6 +251,42 @@ await test('draft can be submitted later; other students cannot touch it', async
   await rejects(as(s2, 'authenticated', `select public.submit_draft($1)`, [d.rows[0].id]), /own draft/);
   const r = await as(s1, 'authenticated', `select (public.submit_draft($1)).status as s`, [d.rows[0].id]);
   assert.equal(r.rows[0].s, 'PENDING_PROFESSOR_APPROVAL');
+});
+
+console.log('print estimate');
+const create = (u, p, draft = false) =>
+  as(u, 'authenticated', `select (public.create_request($1::jsonb, $2)).id as id`, [p, draft]);
+await test('submit needs a print estimate', async () => {
+  await rejects(create(s1, payload(own(s1), { estimate: null })), /print estimate/);
+  const d = await create(s1, payload(own(s1), { estimate: null }), true);
+  await rejects(as(s1, 'authenticated', `select public.submit_draft($1)`, [d.rows[0].id]), /print estimate/);
+  await putEst(s1, own(s1, 'est.png'));
+  await create(s1, payload(own(s1), { estimate: { rows: [], imageKey: own(s1, 'est.png') } }));
+});
+await test('estimate is validated and cleaned', async () => {
+  const row = { label: 'Total time', value: '1m', source: 'FILE' };
+  const bad = (estimate) => rejects(create(s1, payload(own(s1), { estimate })), /Invalid print estimate/);
+  await bad({ rows: Array.from({ length: 61 }, () => row) });
+  await bad({ rows: [{ ...row, value: 'x'.repeat(81) }] });
+  await bad({ rows: [{ ...row, source: 'X' }] });
+  const r = await create(s1, payload(own(s1), { estimate: { rows: [{ ...row, x: 1 }], imageName: 'shot.png', evil: 'y' } }));
+  const q = await as(s1, 'authenticated',
+    `select estimate->'rows'->0 ? 'x' as has, estimate ? 'evil' as evil, estimate_image_path as img from public.print_requests where id = $1`,
+    [r.rows[0].id]);
+  assert.equal(q.rows[0].has, false);
+  assert.equal(q.rows[0].evil, false);
+  assert.equal(q.rows[0].img, null);
+});
+await test("estimate image must be the student's own png", async () => {
+  await rejects(putEst(s1, own(s1, 'e.jpg')), /row-level security/);
+  await rejects(putEst(s1, own(s2, 'e.png')), /row-level security/);
+  await rejects(create(s1, payload(own(s1), { estimate: { rows: [], imageKey: own(s2, 'e.png') } })), /estimate screenshot/);
+});
+await test('professor reads estimate images; other students cannot', async () => {
+  await rejects(putEst(prof, own(prof, 'e.png')), /row-level security/);
+  const r = await as(prof, 'authenticated', `select name from storage.objects where bucket_id = 'estimates'`);
+  assert.equal(r.rows.length, 1);
+  assert.equal((await as(s2, 'authenticated', `select name from storage.objects where bucket_id = 'estimates'`)).rows.length, 0);
 });
 
 console.log('abuse protection');
