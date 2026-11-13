@@ -22,7 +22,7 @@ Node 24 (runs `.ts` tests directly).
 ## Global Constraints
 
 - Rows are text exactly as shown or read. Never convert or round away information, and never drop a line.
-- Limits: ≤ 60 rows; label ≤ 60 chars; value 1–80 chars; `source` is `'IMAGE' | 'FILE'`; optional
+- Limits: ≤ 200 rows (≈18 plates); label ≤ 60 chars; value 1–80 chars; `source` is `'IMAGE' | 'FILE'`; optional
   `plate` 1–99; file names ≤ 200 chars.
 - Screenshot: any image the browser can decode, raw input ≤ 20 MB. It is stored as PNG with a longest side
   of 2400 px and must be ≤ 5 MB.
@@ -217,7 +217,7 @@ Here `<BBL>` = `C:/Program Files/Bambu Studio/resources/profiles/BBL`, and the C
       - `{ estimate: { rows: [], imageKey: own(s1,'est.png') } }` after `putEst(s1, own(s1,'est.png'))`
         succeeds.
     - `estimate is validated and cleaned`:
-      - 61 rows → `/Invalid print estimate/`
+      - 201 rows → `/Invalid print estimate/`
       - a value of 81 chars → `/Invalid print estimate/`
       - source `'X'` → `/Invalid print estimate/`
       - a row with an extra key `x` is stored without `x`. Check with

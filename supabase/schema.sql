@@ -506,7 +506,7 @@ begin
   if jsonb_typeof(p) <> 'object' then raise exception 'Invalid print estimate.'; end if;
 
   if p ? 'rows' and jsonb_typeof(p -> 'rows') <> 'null' then
-    if jsonb_typeof(p -> 'rows') <> 'array' or jsonb_array_length(p -> 'rows') > 60 then
+    if jsonb_typeof(p -> 'rows') <> 'array' or jsonb_array_length(p -> 'rows') > 200 then
       raise exception 'Invalid print estimate.';
     end if;
     for v_row in select * from jsonb_array_elements(p -> 'rows') loop

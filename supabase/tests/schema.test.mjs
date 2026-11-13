@@ -266,7 +266,7 @@ await test('submit needs a print estimate', async () => {
 await test('estimate is validated and cleaned', async () => {
   const row = { label: 'Total time', value: '1m', source: 'FILE' };
   const bad = (estimate) => rejects(create(s1, payload(own(s1), { estimate })), /Invalid print estimate/);
-  await bad({ rows: Array.from({ length: 61 }, () => row) });
+  await bad({ rows: Array.from({ length: 201 }, () => row) });
   await bad({ rows: [{ ...row, value: 'x'.repeat(81) }] });
   await bad({ rows: [{ ...row, source: 'X' }] });
   const r = await create(s1, payload(own(s1), { estimate: { rows: [{ ...row, x: 1 }], imageName: 'shot.png', evil: 'y' } }));
