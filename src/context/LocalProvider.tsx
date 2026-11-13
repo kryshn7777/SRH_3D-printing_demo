@@ -904,7 +904,12 @@ export const LocalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addToast,
         dismissToast,
         createOrSubmitRequest: resolved(createOrSubmitRequest),
-        submitDraftRequest: resolved(submitDraftRequest),
+        // Callers (My Requests / details "Submit") ignore the result, so surface errors like LiveProvider does.
+        submitDraftRequest: resolved((id: string) => {
+          const res = submitDraftRequest(id);
+          if (!res.ok) addToast('error', 'Could Not Submit', res.error || 'Could not submit this request.');
+          return res;
+        }),
         professorReviewRequest: resolved(professorReviewRequest),
         revokePrinterAccess: resolved(revokePrinterAccess),
         updatePrinterStatus: resolved(updatePrinterStatus),

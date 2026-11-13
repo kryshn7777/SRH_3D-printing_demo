@@ -60,7 +60,9 @@ export async function readEstimateImage(file: File): Promise<{ rows: EstimateRow
     let text = '';
     try {
       const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker(['eng', 'deu']);
+      // eng only: measured on the reference panel, eng+deu misreads the "g" unit as "9" ("1.199");
+      // German slicer labels are plain ASCII words that the eng model reads fine.
+      const worker = await createWorker('eng');
       try {
         text = (await worker.recognize(await toPng(oc))).data.text;
       } finally {

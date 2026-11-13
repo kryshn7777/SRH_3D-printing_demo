@@ -16,9 +16,19 @@ export function parseEstimateText(text: string): EstimateRow[] {
     const line = raw.replace(/\s+/g, ' ').trim();
     if (!line) continue;
     const m = /^([^:;]{1,60}?)\s*[:;]\s*(.+)$/.exec(line); // ';' is a common misread of ':'
-    rows.push({ label: m ? m[1] : '', value: (m ? m[2] : line).slice(0, 80), source: 'IMAGE' });
+    const label = m ? m[1] : '';
+    rows.push({ label, value: restoreDecimals(label, m ? m[2] : line).slice(0, 80), source: 'IMAGE' });
   }
   return rows.slice(0, 60); // ponytail: panel has ~10 lines; excess OCR junk is cut at the backend's row cap
+}
+
+// Bambu prints filament m/g and cost with exactly 2 decimals; the 1-px decimal point is often lost by OCR
+// ("039m 119g"). Only filament/cost rows are touched, so times like "10m35s" stay as read.
+const dec = (n: string) => (!n.includes('.') && n.length >= 3 ? `${n.slice(0, -2)}.${n.slice(-2)}` : n);
+function restoreDecimals(label: string, value: string): string {
+  if (/cost|kosten/i.test(label)) return /^\d+$/.test(value) ? dec(value) : value;
+  if (!/filament/i.test(label)) return value;
+  return value.replace(/(\d+(?:\.\d+)?)\s*(m|g)\b/g, (_, n: string, u: string) => `${dec(n)} ${u}`);
 }
 
 // ---- shared header model ----

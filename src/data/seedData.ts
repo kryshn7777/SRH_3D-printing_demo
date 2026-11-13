@@ -168,15 +168,16 @@ export const SEED_PRINTERS: Printer[] = [
   },
 ];
 
-const SEED_ESTIMATE: PrintRequest['estimate'] = {
+// Demo estimate in the exact shape the sliced-file parser emits (a sliced file has no "Model filament").
+export const SEED_ESTIMATE: NonNullable<PrintRequest['estimate']> = {
   slicedFileName: 'robot_arm_joint.gcode.3mf',
   rows: [
+    ['Total time', '10m 35s'],
+    ['Model printing time', '3m 51s'],
+    ['Prepare time', '6m 44s'],
     ['Total filament', '0.39 m  1.19 g'],
-    ['Model filament', '0.39 m  1.18 g'],
     ['Cost', '0.03'],
-    ['Prepare time', '6m43s'],
-    ['Model printing time', '3m51s'],
-    ['Total time', '10m35s'],
+    ['Slicer', 'BambuStudio 02.08.02.61'],
   ].map(([label, value]) => ({ label, value, source: 'FILE' as const, plate: 1 })),
 };
 

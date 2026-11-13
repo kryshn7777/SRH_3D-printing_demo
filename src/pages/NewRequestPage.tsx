@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { DEPARTMENTS } from '../data/seedData';
+import { DEPARTMENTS, SEED_ESTIMATE } from '../data/seedData';
 import {
   SupportedMaterial,
   AttachmentMetadata,
@@ -244,17 +244,7 @@ export const NewRequestPage: React.FC = () => {
     setPrinterId('PR-05');
     setMaterial('PETG');
     attachSampleStl();
-    setEstimate({
-      slicedFileName: 'robot_arm_joint.gcode.3mf',
-      rows: [
-        ['Total filament', '0.39 m  1.19 g'],
-        ['Model filament', '0.39 m  1.18 g'],
-        ['Cost', '0.03'],
-        ['Prepare time', '6m43s'],
-        ['Model printing time', '3m51s'],
-        ['Total time', '10m35s'],
-      ].map(([label, value]) => ({ label, value, source: 'FILE' as const, plate: 1 })),
-    });
+    setEstimate(SEED_ESTIMATE);
     setFormErrors([]);
   };
 

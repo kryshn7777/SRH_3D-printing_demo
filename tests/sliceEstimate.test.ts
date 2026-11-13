@@ -32,6 +32,14 @@ assert.deepEqual(rows.filter(r => r.label).map(r => [r.label, r.value]), [
 assert.ok(rows.every(r => r.source === 'IMAGE'));
 assert.ok(rows.some(r => r.label === '' && r.value === 'Total Estimation')); // no line dropped
 assert.equal(v(parseEstimateText('Cost; 0.03'), 'Cost'), '0.03');             // ';' misread as ':'
+// Real tesseract output for estimate-panel.png (eng): decimal points lost; restored for filament/cost rows only
+const real = parseEstimateText('Total Filament: 039m 119g\nModel Filament: 039m 118g\nCost: 003\nPrepare time: 6m43s\nTotal time: 10m35s');
+assert.equal(v(real, 'Total Filament'), '0.39 m 1.19 g');
+assert.equal(v(real, 'Model Filament'), '0.39 m 1.18 g');
+assert.equal(v(real, 'Cost'), '0.03');
+assert.equal(v(real, 'Prepare time'), '6m43s');                                   // times untouched
+assert.equal(v(real, 'Total time'), '10m35s');
+assert.equal(v(parseEstimateText('Total Filament: 12.50 m 37.21 g'), 'Total Filament'), '12.50 m 37.21 g');
 assert.equal(v(parseEstimateText('Gesamtzeit: 10m35s'), 'Gesamtzeit'), '10m35s');
 assert.ok(parseEstimateText('x: ' + 'y'.repeat(200)).every(r => r.value.length <= 80));
 assert.ok(parseEstimateText('z'.repeat(100) + ': 1').every(r => r.label.length <= 60 && r.value.length >= 1));
