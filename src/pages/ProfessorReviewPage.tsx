@@ -13,6 +13,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { CadModelPreview } from '../components/PrinterIllustration';
 import { StatusBadge } from '../components/StatusBadge';
+import { PrintEstimateCard } from '../components/PrintEstimateCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { triggerModelDownload } from '../utils/stlStorageAndParser';
 
@@ -253,6 +254,8 @@ export const ProfessorReviewPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <PrintEstimateCard estimate={request.estimate} />
 
       {/* Middle Two-Column Row: Student File & Reviewer Comments matching Screen 8 */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">

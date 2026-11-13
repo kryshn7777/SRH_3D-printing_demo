@@ -1,5 +1,6 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PrintEstimateCard } from '../components/PrintEstimateCard';
 import {
   ArrowLeft,
   Download,
@@ -80,16 +81,24 @@ export const StudentRequestDetailsPage: React.FC = () => {
         <div className="flex items-center gap-3">
           {(request.currentStatus === 'DRAFT' ||
             request.currentStatus === 'CHANGES_REQUESTED') && (
-            <button
-              type="button"
-              onClick={() => submitDraftRequest(request.id)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] text-white text-xs font-semibold shadow-2xs cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              {request.currentStatus === 'DRAFT'
-                ? 'Submit Request Now'
-                : 'Resubmit for Approval'}
-            </button>
+            <>
+              <Link
+                to={`/student/requests/new?draftId=${request.id}`}
+                className="inline-flex items-center px-3.5 py-2 rounded-lg bg-[#EBF2FF] hover:bg-blue-100 text-[#1662F3] text-xs font-semibold cursor-pointer"
+              >
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={() => submitDraftRequest(request.id)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1662F3] hover:bg-[#1251D1] text-white text-xs font-semibold shadow-2xs cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {request.currentStatus === 'DRAFT'
+                  ? 'Submit Request Now'
+                  : 'Resubmit for Approval'}
+              </button>
+            </>
           )}
 
           {request.currentStatus === 'APPROVED_ACCESS_GRANTED' && (
@@ -247,6 +256,8 @@ export const StudentRequestDetailsPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      <PrintEstimateCard estimate={request.estimate} />
 
       {/* Bottom Row: Approval Workflow (8 cols) + Comments (4 cols) matching Screen 6 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">

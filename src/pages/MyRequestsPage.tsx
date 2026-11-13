@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -220,6 +220,15 @@ export const MyRequestsPage: React.FC = () => {
                   </td>
                   <td className="py-3.5 pl-3 pr-5 text-right whitespace-nowrap">
                     <div className="inline-flex items-center justify-end gap-2">
+                      {(req.currentStatus === 'DRAFT' ||
+                        req.currentStatus === 'CHANGES_REQUESTED') && (
+                        <Link
+                          to={`/student/requests/new?draftId=${req.id}`}
+                          className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-[#EBF2FF] hover:bg-blue-100 text-[#1662F3] text-xs font-semibold cursor-pointer"
+                        >
+                          Edit
+                        </Link>
+                      )}
                       {req.currentStatus === 'DRAFT' && (
                         <button
                           type="button"
