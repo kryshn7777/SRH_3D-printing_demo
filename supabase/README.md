@@ -49,8 +49,14 @@ are set. Set them and it switches to the real backend. No code changes.
 | Rate limits | `create_request` 20/h, reviews 120/h, writes 300/h, uploads 20/h per user (`P0429 rate_limited`) |
 | Login | Edge function: attempts counted *before* the password check (atomic, parallel requests cannot bypass), 6 per 15 min per (id, IP), 30 per id, 40 per IP; fails closed; generic error; email never returned |
 | Files | Private bucket, 50 MB per file, 150 MB per user in total, `.stl/.3mf/.obj`, path must start with the user's id, served as `octet-stream` |
+| Print estimates | Screenshot in a private `estimates` bucket (PNG only, 5 MB, own folder, same quota); rows validated and cleaned by `private.clean_estimate`; required on every submit path. Values are student-supplied and information-only |
 | Audit | `audit_log` is append-only; actors/timestamps are stamped by the server; CSV export neutralises spreadsheet formulas |
 | Browser | Strict CSP (connect-src only this site + your Supabase project) |
+
+## Updating an existing project
+
+Re-run `supabase/schema.sql` in the SQL editor after pulling new versions. It is safe to run again and
+adds what is missing (for example the print-estimate columns and the `estimates` bucket).
 
 ## Known limits (read before launch)
 
@@ -71,6 +77,8 @@ are set. Set them and it switches to the real backend. No code changes.
 - Two unconfirmed sign-ups with the same matriculation number: the second can never confirm.
 - **Free tier storage is 1 GB** (about 200 models at 5 MB), no automatic backups, and orphaned uploads
   (uploaded but never attached to a request) are not cleaned up automatically.
+- **Print estimates are not verified.** Screenshot text is read in the student's browser (OCR can misread,
+  students can correct rows) and sliced files are parsed there too; the professor sees the screenshot to compare.
 - Approver email notifications were removed with the Microsoft login. Staff see pending requests in the app.
 
 ## Tests
