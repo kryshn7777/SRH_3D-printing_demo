@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:db": "node supabase/tests/schema.test.mjs"
+    "test:db": "node supabase/tests/schema.test.mjs",
+    "test:unit": "node tests/sliceEstimate.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

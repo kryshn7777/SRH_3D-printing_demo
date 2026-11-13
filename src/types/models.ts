@@ -71,6 +71,9 @@ export interface AttachmentMetadata {
   volumeCm3?: number;
 }
 
+export interface EstimateRow { label: string; value: string; source: 'IMAGE' | 'FILE'; plate?: number }
+export interface PrintEstimate { rows: EstimateRow[]; imageKey?: string; imageName?: string; slicedFileName?: string }
+
 export interface PrintRequest {
   id: string; // e.g. 'PR-003'
   studentId: string;
@@ -92,6 +95,7 @@ export interface PrintRequest {
   currentStatus: RequestStatus;
   assignedProfessorName?: string;
   assignedProfessorId?: string;
+  estimate?: PrintEstimate;
 }
 
 export type ApprovalDecision =
