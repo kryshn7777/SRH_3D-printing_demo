@@ -12,6 +12,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { RequestStatus } from '../types/models';
+import { downloadBlob } from '../utils/stlStorageAndParser';
 
 export const AuditLogPage: React.FC = () => {
   const { pcLogs, requests, currentUser, revokePrinterAccess } = useApp();
@@ -89,13 +90,11 @@ export const AuditLogPage: React.FC = () => {
     );
     const csvContent =
       [headers.join(','), ...rows.map((r) => r.join(','))].join('\n') + '\n';
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `srh-berlin-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(
+      // BOM: Excel (lab PCs) otherwise opens UTF-8 as ANSI and shows "Müller" as "MÃ¼ller".
+      new Blob(['﻿', csvContent], { type: 'text/csv;charset=utf-8' }),
+      `srh-berlin-audit-log-${new Date().toISOString().slice(0, 10)}.csv`
+    );
   };
 
   return (

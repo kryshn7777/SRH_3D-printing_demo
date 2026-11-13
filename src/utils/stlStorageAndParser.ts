@@ -576,13 +576,21 @@ export async function triggerModelDownload(
     buffer = generateSeedStlArrayBuffer(previewKey || 'bracket-joint');
   }
 
-  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  downloadBlob(new Blob([buffer], { type: 'application/octet-stream' }), fileName || 'srh_model.stl');
+}
+
+/**
+ * Saves a Blob under `fileName`. The object URL must outlive the click: Android Chrome hands the URL to its
+ * download manager asynchronously, and revoking it right away saves a file named after the blob's random id,
+ * with no extension and no content.
+ */
+export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName || 'srh_model.stl';
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
