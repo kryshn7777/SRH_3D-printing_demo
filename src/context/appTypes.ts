@@ -11,6 +11,7 @@ import {
   PrinterAvailability,
   AttachmentMetadata,
   ApprovalContact,
+  PrintEstimate,
 } from '../types/models';
 
 export interface ToastNotification {
@@ -43,6 +44,7 @@ export interface CreateRequestPayload {
   material: SupportedMaterial;
   quantity: number;
   attachment: AttachmentMetadata;
+  estimate?: PrintEstimate;
   saveAsDraft?: boolean;
   existingDraftId?: string;
 }

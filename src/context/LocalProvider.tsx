@@ -13,6 +13,7 @@ import {
   AttachmentMetadata,
   ApprovalContact,
 } from '../types/models';
+import { hasEstimate } from '../utils/sliceEstimate';
 import {
   SEED_USERS,
   SEED_PRINTERS,
@@ -332,8 +333,11 @@ export const LocalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
     }
 
-    const { dateShort, dateTime, iso } = formatNowDate();
     const isDraft = Boolean(payload.saveAsDraft);
+    if (!isDraft && !hasEstimate(payload.estimate)) {
+      return { ok: false, error: 'Please attach your print estimate (slicer screenshot or sliced file).' };
+    }
+    const { dateShort, dateTime, iso } = formatNowDate();
     const targetStatus: RequestStatus = isDraft
       ? 'DRAFT'
       : 'PENDING_PROFESSOR_APPROVAL';
@@ -360,6 +364,7 @@ export const LocalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ...payload.attachment,
         uploadedAt: dateTime,
       },
+      estimate: payload.estimate,
       submissionTimestamp: iso,
       submissionDateFormatted: dateShort,
       submissionDateTimeFormatted: dateTime,
@@ -429,6 +434,10 @@ export const LocalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       existing.currentStatus !== 'CHANGES_REQUESTED'
     ) {
       return { ok: false, error: 'Only draft or change-requested items can be submitted.' };
+    }
+
+    if (!hasEstimate(existing.estimate)) {
+      return { ok: false, error: 'Please attach your print estimate (slicer screenshot or sliced file).' };
     }
 
     const { dateShort, dateTime, iso } = formatNowDate();

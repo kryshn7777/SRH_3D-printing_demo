@@ -114,6 +114,15 @@ const mapRequest = (r: Row): PrintRequest => ({
   currentStatus: r.status as RequestStatus,
   assignedProfessorId: r.assigned_professor_id ?? undefined,
   assignedProfessorName: r.assigned_professor_name ?? undefined,
+  estimate:
+    r.estimate || r.estimate_image_path
+      ? {
+          rows: r.estimate?.rows ?? [],
+          imageName: r.estimate?.imageName,
+          slicedFileName: r.estimate?.slicedFileName,
+          imageKey: r.estimate_image_path ?? undefined,
+        }
+      : undefined,
 });
 
 const mapApproval = (a: Row): Approval => ({

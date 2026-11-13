@@ -15,10 +15,14 @@ import {
   SupportedMaterial,
   AttachmentMetadata,
   ApprovalContact,
+  PrintEstimate,
   ALL_MATERIALS,
   APPROVAL_CONTACTS,
 } from '../types/models';
 import { CadModelPreview } from '../components/PrinterIllustration';
+import { PrintEstimateSection } from '../components/PrintEstimateSection';
+import { hasEstimate } from '../utils/sliceEstimate';
+import { cleanEstimate } from '../utils/estimateOcr';
 import {
   saveModelBlob,
   parseStlOrObjGeometry,
@@ -104,6 +108,7 @@ export const NewRequestPage: React.FC = () => {
   const [attachment, setAttachment] = useState<AttachmentMetadata | null>(
     existingDraft?.attachment || null
   );
+  const [estimate, setEstimate] = useState<PrintEstimate | null>(existingDraft?.estimate ?? null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -239,6 +244,17 @@ export const NewRequestPage: React.FC = () => {
     setPrinterId('PR-05');
     setMaterial('PETG');
     attachSampleStl();
+    setEstimate({
+      slicedFileName: 'robot_arm_joint.gcode.3mf',
+      rows: [
+        ['Total filament', '0.39 m  1.19 g'],
+        ['Model filament', '0.39 m  1.18 g'],
+        ['Cost', '0.03'],
+        ['Prepare time', '6m43s'],
+        ['Model printing time', '3m51s'],
+        ['Total time', '10m35s'],
+      ].map(([label, value]) => ({ label, value, source: 'FILE' as const, plate: 1 })),
+    });
     setFormErrors([]);
   };
 
@@ -269,6 +285,9 @@ export const NewRequestPage: React.FC = () => {
       if (!attachment) {
         errs.push('Please upload a valid 3D model file (.STL, .3MF, or .OBJ).');
       }
+    }
+    if (!isDraft && !hasEstimate(cleanEstimate(estimate))) {
+      errs.push('Please attach your print estimate (slicer screenshot or sliced file).');
     }
     setFormErrors(errs);
     return errs.length === 0;
@@ -302,6 +321,7 @@ export const NewRequestPage: React.FC = () => {
         uploadedAt: 'Draft',
         previewKey: 'bracket-joint',
       },
+      estimate: cleanEstimate(estimate) ?? undefined,
       saveAsDraft,
       existingDraftId: existingDraft?.id,
     });
@@ -675,6 +695,8 @@ export const NewRequestPage: React.FC = () => {
             </div>
           </section>
         </div>
+
+        <PrintEstimateSection value={estimate} onChange={setEstimate} />
 
         {/* Bottom Right Actions matching Screen 4 */}
         <div className="flex flex-wrap items-center justify-end gap-3 pt-1">

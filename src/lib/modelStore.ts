@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { registerRemoteModelStore } from '../utils/stlStorageAndParser';
+import { registerRemoteImageStore } from '../utils/estimateImageStore';
 
 // 3D models live in the private "models" bucket, one folder per user (see supabase/schema.sql).
 registerRemoteModelStore({
@@ -28,5 +29,29 @@ registerRemoteModelStore({
     const { data, error } = await supabase.storage.from('models').download(key);
     if (error || !data) return null;
     return { key, buffer: await data.arrayBuffer(), fileName: key.split('/').pop() ?? key, fileType: '', savedAt: '' };
+  },
+});
+
+// Estimate screenshots live in the private "estimates" bucket, one folder per user.
+registerRemoteImageStore({
+  async save(png) {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw new Error('Please log in again to upload files.');
+    const path = `${auth.user.id}/${Date.now()}-estimate.png`;
+    const { error } = await supabase.storage
+      .from('estimates')
+      .upload(path, png, { contentType: 'image/png', upsert: false });
+    if (error) {
+      throw new Error(
+        /row-level security|policy|exceeded/i.test(error.message)
+          ? 'Upload was refused (too many uploads this hour, or the image is too large).'
+          : 'Upload failed. Please try again.'
+      );
+    }
+    return path;
+  },
+  async load(key) {
+    const { data, error } = await supabase.storage.from('estimates').download(key);
+    return error || !data ? null : data;
   },
 });

@@ -168,6 +168,18 @@ export const SEED_PRINTERS: Printer[] = [
   },
 ];
 
+const SEED_ESTIMATE: PrintRequest['estimate'] = {
+  slicedFileName: 'robot_arm_joint.gcode.3mf',
+  rows: [
+    ['Total filament', '0.39 m  1.19 g'],
+    ['Model filament', '0.39 m  1.18 g'],
+    ['Cost', '0.03'],
+    ['Prepare time', '6m43s'],
+    ['Model printing time', '3m51s'],
+    ['Total time', '10m35s'],
+  ].map(([label, value]) => ({ label, value, source: 'FILE' as const, plate: 1 })),
+};
+
 export const SEED_REQUESTS: PrintRequest[] = [
   {
     id: 'PR-004',
@@ -198,6 +210,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'APPROVED_ACCESS_GRANTED',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
   {
     id: 'PR-003',
@@ -229,6 +242,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'PENDING_PROFESSOR_APPROVAL',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
   {
     id: 'PR-002',
@@ -259,6 +273,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'REJECTED_BY_PROFESSOR',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
   {
     id: 'PR-005',
@@ -289,6 +304,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'PENDING_PROFESSOR_APPROVAL',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
   {
     id: 'PR-006',
@@ -320,6 +336,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'PENDING_PROFESSOR_APPROVAL',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
   {
     id: 'PR-007',
@@ -351,6 +368,7 @@ export const SEED_REQUESTS: PrintRequest[] = [
     currentStatus: 'PENDING_PROFESSOR_APPROVAL',
     assignedProfessorName: 'Ajinkya Keskar',
     assignedProfessorId: 'USR-PROF-01',
+    estimate: SEED_ESTIMATE,
   },
 ];
 
