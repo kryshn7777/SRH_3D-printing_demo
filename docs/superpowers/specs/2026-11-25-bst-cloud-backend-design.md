@@ -1,6 +1,10 @@
 # BST-Cloud (Nextcloud) backend: design
 
-Date: 2026-11-25. Status: draft, waiting for approval.
+Date: 2026-11-25. Status: **superseded** (2026-11-25).
+
+Students have no BST-Cloud logins, so this design is replaced. The 3D-printing section moves
+into the LMS (Moodle) as a plugin, and BST-Cloud becomes file storage only, reached by the LMS
+server. A new design will replace this one.
 
 ## Intent
 
