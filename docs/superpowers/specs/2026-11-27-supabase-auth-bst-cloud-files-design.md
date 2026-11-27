@@ -74,15 +74,19 @@ tests already cover them); the function is a thin forwarder.
 storage account. To keep the professor's login and other files out of reach, the app does **not** store
 that login. Instead the professor creates one folder `3d-printing` and a **password-protected share link**
 for it with "Allow upload and editing". The function talks WebDAV to that share only
-(`<NEXTCLOUD_URL>/public.php/dav/files/<share-token>/`, Basic auth `anonymous` : share password; verify this
+(`https://cloud.bstsrhberlin.com/public.php/dav/files/<share-token>/`, Basic auth `anonymous` : share password; verify this
 auth form in the first build step). A leak exposes only that folder, whose files are encrypted, and the
 professor can delete the link at any time. (Probed 2026-11-27: the public WebDAV endpoint answers on
 BST-Cloud; whether link uploads are allowed shows when the professor creates the link.)
 Fallback if the admin has disabled upload links: an app password of the professor's account
-(Settings > Security, revocable), same code with `remote.php/dav/files/<user>/3d-printing/`.
+(Settings > Security, revocable).
 
-**Secrets** (Supabase > Edge Functions > Secrets): `NEXTCLOUD_URL`, `NEXTCLOUD_SHARE_TOKEN`,
-`NEXTCLOUD_SHARE_PASSWORD`, `FILES_ENCRYPTION_KEY` (32 random bytes, base64).
+**Secrets** (Supabase > Edge Functions > Secrets): `NEXTCLOUD_DAV_ROOT`, `NEXTCLOUD_DAV_USER`,
+`NEXTCLOUD_DAV_PASSWORD`, `FILES_ENCRYPTION_KEY` (32 random bytes, base64). Share link:
+root `https://cloud.bstsrhberlin.com/public.php/dav/files/<share-token>`, user `anonymous`, the share
+password. Fallback: root `https://cloud.bstsrhberlin.com/remote.php/dav/files/<user>/3d-printing`, the
+user name, an app password. Same code either way. The function needs no `service_role` key: every SQL
+call runs with the caller's own JWT.
 
 **Encryption:** every file is encrypted in the function before the `PUT` and decrypted after the `GET`
 (AES-256-GCM via WebCrypto, fresh random IV per file, stored as `version byte + IV + ciphertext`).
