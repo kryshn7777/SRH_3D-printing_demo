@@ -1,6 +1,6 @@
 # Supabase login, BST-Cloud files, real lab PC client (design, 2026-11-27)
 
-Status: **draft, waiting for approval.** Replaces the "drop Supabase / Moodle plugin" direction of
+Status: **approved 2026-11-27** (with the encryption + share-link change below). Replaces the "drop Supabase / Moodle plugin" direction of
 2026-11-25 (`2026-11-25-bst-cloud-backend-design.md` stays superseded).
 
 ## Intent
@@ -18,7 +18,7 @@ Nextcloud 35). Moodle login is not built now, but there is a marked place for it
 
 - **Goals:** real logins for students and staff; files on SRH storage; a working lab PC client; reuse the
   existing app, schema and tests.
-- **Non-goals now:** Moodle login, Moodle plugin, encrypting files before upload, CAPTCHA (see "Follow-ups"),
+- **Non-goals now:** Moodle login, Moodle plugin, CAPTCHA (see "Follow-ups"),
   a packaged `.exe` for the lab PC, marking requests as printed.
 - **Anti-goals:** a BST-Cloud password or the Supabase `service_role` key reaching a browser, the lab PC
   or the repo; a web page opened on the lab PC being able to drive the lab client; a student's model or
@@ -70,9 +70,24 @@ Browsers cannot call BST-Cloud (cross-origin requests are refused, probed 2026-1
 function `files` forwards them server-to-server over WebDAV. **The rules stay in SQL** (where the PGlite
 tests already cover them); the function is a thin forwarder.
 
-**Secrets** (Supabase > Edge Functions > Secrets): `NEXTCLOUD_URL`, `NEXTCLOUD_USER`,
-`NEXTCLOUD_APP_PASSWORD` (a dedicated BST-Cloud storage account's app password, from the BST-Cloud admin).
-WebDAV root: `<NEXTCLOUD_URL>/remote.php/dav/files/<NEXTCLOUD_USER>/3d-printing/`.
+**Which BST-Cloud account (decided 2026-11-27):** the professor's own account; there is no dedicated
+storage account. To keep the professor's login and other files out of reach, the app does **not** store
+that login. Instead the professor creates one folder `3d-printing` and a **password-protected share link**
+for it with "Allow upload and editing". The function talks WebDAV to that share only
+(`<NEXTCLOUD_URL>/public.php/dav/files/<share-token>/`, Basic auth `anonymous` : share password; verify this
+auth form in the first build step). A leak exposes only that folder, whose files are encrypted, and the
+professor can delete the link at any time. (Probed 2026-11-27: the public WebDAV endpoint answers on
+BST-Cloud; whether link uploads are allowed shows when the professor creates the link.)
+Fallback if the admin has disabled upload links: an app password of the professor's account
+(Settings > Security, revocable), same code with `remote.php/dav/files/<user>/3d-printing/`.
+
+**Secrets** (Supabase > Edge Functions > Secrets): `NEXTCLOUD_URL`, `NEXTCLOUD_SHARE_TOKEN`,
+`NEXTCLOUD_SHARE_PASSWORD`, `FILES_ENCRYPTION_KEY` (32 random bytes, base64).
+
+**Encryption:** every file is encrypted in the function before the `PUT` and decrypted after the `GET`
+(AES-256-GCM via WebCrypto, fresh random IV per file, stored as `version byte + IV + ciphertext`).
+BST-Cloud, the professor's account and anyone with the share link see only ciphertext. Losing
+`FILES_ENCRYPTION_KEY` makes all stored files unreadable: the owner keeps a copy in a password manager.
 
 **New table** `private.files (path text primary key, kind text check (kind in ('models','estimates')),
 owner uuid, size bigint, created_at timestamptz default now())`. Path format stays as today:
@@ -156,8 +171,8 @@ not committed.
 
 ### 4. Supabase setup the owner does (summary)
 
-`supabase/README.md` steps 1-7, plus for files: BST-Cloud storage account + app password -> the three
-`NEXTCLOUD_*` secrets -> deploy `files` -> re-run `schema.sql`. Plus: put the project URL and anon key
+`supabase/README.md` steps 1-7, plus for files: the professor creates the `3d-printing` folder and its
+password-protected upload link -> the four secrets above -> deploy `files` -> re-run `schema.sql`. Plus: put the project URL and anon key
 in `local-client/config.json` on the lab PC. The README gets these additions, and its CAPTCHA line
 (step 3) changes to "leave off until the CAPTCHA follow-up".
 
@@ -187,7 +202,6 @@ students may create tokens.
   whether the lab client window can show the widget). Until then: leave CAPTCHA off, the `login` function's
   rate limits stay the guard.
 - Packaged `.exe` for the lab PC (PyInstaller) so it needs no Python.
-- Encrypting files before upload, if the professor wants BST-Cloud admins unable to read models.
 
 ## Left to the builder
 
@@ -207,12 +221,12 @@ auto-backups and anything the student saves elsewhere stay on the PC. How sliced
   shared Windows account on the lab PC).
 - If a 50 MB upload does not fit the edge function's limits, the 50 MB cap is lowered everywhere rather than
   building chunked uploads.
-- Build order: login seam and lab client first, then the `files` function. The user already has the
-  BST-Cloud storage account; its quota is still to be checked (needed: up to 150 MB per student by the
-  existing quota rule; nothing deletes old files automatically).
+- Build order: login seam and lab client first, then the `files` function. Space comes from the
+  professor's account quota, still to be checked (needed: up to 150 MB per student by the existing quota
+  rule; nothing deletes old files automatically).
 
 - Estimate screenshots also go to BST-Cloud (one storage path for all student files).
-- No encryption before upload (BST-Cloud is SRH's own server).
+- AES-256-GCM in the edge function, one key in Supabase secrets, no key rotation in v1.
 - Lab client: 15-minute auto logout after Bambu Studio closes; the demo login button is removed.
 - Lab client is for students. If a professor logs in, they see every approved request (what the database
   already allows); the lab in-charge sees none.
